@@ -64,6 +64,9 @@
 #ifndef COSA_EMCTL_MAX_PROFILES_COUNT
 #define COSA_EMCTL_MAX_PROFILES_COUNT       16
 #endif
+#ifndef COSA_EMCTL_MAX_RADIO_COUNT
+#define COSA_EMCTL_MAX_RADIO_COUNT          2
+#endif
 #ifndef COSA_EMCTL_MAX_FREQUENCY_BANDS_LEN
 #define COSA_EMCTL_MAX_FREQUENCY_BANDS_LEN  17
 #endif
@@ -92,8 +95,7 @@
 #define COSA_EMCTL_MAX_CHANNEL_SET          192
 #endif
 
-typedef struct
-{
+typedef struct {
     char *type;
     unsigned int index;
     char *value;
@@ -104,9 +106,11 @@ typedef int (*cb_func_t)(queue_t *);
 struct _COSA_DML_EMCTL_PROFILE_CFG {
     BOOL    Backhaul;
     BOOL    Extender;
+    BOOL    Enable;
     char    FrequencyBands[COSA_EMCTL_MAX_FREQUENCY_BANDS_LEN];
     BOOL    Fronthaul;
     BOOL    Gateway;
+    int     Indices[COSA_EMCTL_MAX_RADIO_COUNT];
     char    KeyPassphrase[COSA_EMCTL_MAX_WIFI_PASSWORD_LEN];
     char    Label[COSA_EMCTL_MAX_PROFILE_LABEL_LEN];
     char    SecurityMode[COSA_EMCTL_MAX_SECURITY_MODE_LEN];
@@ -175,6 +179,7 @@ int CosaEmctlGetTopologyQueryInterval(unsigned int *value);
 int CosaEmctlTopologyStableCheckInterval(unsigned int *value);
 
 int CosaEmctlProfileGetBackhaul(uint8_t index, bool *bh);
+int CosaEmctlProfileGetEnable(uint8_t index, bool *enable);
 int CosaEmctlProfileGetExtender(uint8_t index, uint8_t *extender);
 int CosaEmctlProfileGetFrequencyBands(uint8_t index, char **freq_bands);
 int CosaEmctlProfileGetFronthaul(uint8_t index, bool *fh);

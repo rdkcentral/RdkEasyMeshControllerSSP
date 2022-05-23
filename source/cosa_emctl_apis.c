@@ -23,10 +23,6 @@
  * Licensed under the Apache License, Version 2.0
 */
 
-#define EMCTL_CONTROLLER_ENABLE     "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.WiFi-PSM-DB.Enable"
-#define EMCTL_CONTROLLER_ISMASTER   "Device.EasyMeshController.IsMaster"
-//static char *Enable       = "eRT.com.cisco.spvtg.ccsp.tr181pa.Device.EasyMeshController.Enable";
-
 /*
  * meta-cmf-raspberrypi/recipes-ccsp/ccsp/ccsp-psm.bbappend
  * rdkb/components/opensource/ccsp/CcspPsm/config/bbhm_def_cfg_qemu.xml
@@ -72,6 +68,31 @@ extern PCOSA_DML_EMCTL_CFG g_pEmctl_Cfg;
 
 static pthread_cond_t g_emctl_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t g_emctl_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Fill this array, if static mapping is used */
+static COSA_DML_EMCTL_PROFILE_CFG g_default_profiles[] = {
+    {
+        .Type = "home",
+        .Label = "Family",
+        .Fronthaul = TRUE,
+        .Backhaul = FALSE,
+        .Indices = {0,1},
+    },
+    {
+        .Type = "guest",
+        .Label = "Guest",
+        .Fronthaul = TRUE,
+        .Backhaul = FALSE,
+        .Indices = {2,3},
+    },
+    {
+        .Type = "backhaul",
+        .Label = "Backhaul",
+        .Fronthaul = FALSE,
+        .Backhaul = TRUE,
+        .Indices = {5,-1},
+    }
+};
 
 static int DmlEmctlGetParamValues(char *pathname, char *value, size_t valuesize)
 {
@@ -279,79 +300,480 @@ static void get_mac_addresses(PCOSA_DML_EMCTL_CFG cfg)
     AnscCopyString(cfg->MACAddress, macstr);
 }
 
-int CosaEmctlGetSSIDbyIndex(char *value, int index)
+static int wifi_get_radio_freqband(char *value, unsigned int index)
 {
-    char acTmpReturnValue[256] = {0};
     char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
+
+    sprintf(path, "Device.WiFi.SSID.%d.LowerLayers", index);
+    if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+        return ANSC_STATUS_FAILURE;
+    }
+    /* Lets assume if SSID is enabled, so is its Radio */
+    sprintf(path, "%sOperatingFrequencyBand", acTmpReturnValue);
+    if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+        return ANSC_STATUS_FAILURE;
+    }
+    if (strcmp("5GHz", acTmpReturnValue) == 0) {
+        strcpy(value, "5");
+    } else {
+        strcpy(value, "2");
+    }
+
+    return 0;
+}
+
+static int wifi_get_ssid_count(unsigned int *value)
+{
+    char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
+
+    sprintf(path, "Device.WiFi.SSIDNumberOfEntries");
+    if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+        return ANSC_STATUS_FAILURE;
+    }
+    *value = (unsigned int)atoi(acTmpReturnValue);
+
+    return 0;
+}
+
+static int wifi_get_ssid_enable(bool *value, unsigned int index)
+{
+    char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
+
+    sprintf(path, "Device.WiFi.SSID.%d.Enable", index);
+    if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+        return ANSC_STATUS_FAILURE;
+    }
+    if (strcmp("true", acTmpReturnValue) == 0) {
+        *value = true;
+    } else {
+        *value = false;
+    }
+
+    return 0;
+}
+
+static int wifi_get_ssid_ssid(char *value, unsigned int index)
+{
+    char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
 
     sprintf(path, "Device.WiFi.SSID.%d.SSID", index);
     if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
-        printf("%s %d Failed to get param value\n", __FUNCTION__, __LINE__);
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
         return ANSC_STATUS_FAILURE;
     }
     AnscCopyString(value, acTmpReturnValue);
-    printf("%s %d param value = %s\n", __FUNCTION__, __LINE__, value);
+
     return 0;
 }
 
-int CosaEmctlGetPassPhrasebyIndex(char *value, int index)
+static int wifi_get_security_index(unsigned int *value, unsigned int index)
 {
-    char acTmpReturnValue[256] = {0};
     char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
+    char pattern[64] = {0};
+    unsigned int ap_count;
+    unsigned int i;
+
+    sprintf(pattern, "Device.WiFi.SSID.%d.", index);
+    sprintf(path, "Device.WiFi.AccessPointNumberOfEntries");
+    if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+        return ANSC_STATUS_FAILURE;
+    }
+    ap_count = atoi(acTmpReturnValue);
+    for (i = 0; i < ap_count; i++) {
+        sprintf(path, "Device.WiFi.AccessPoint.%d.SSIDReference", i + 1);
+        if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+            fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+            return ANSC_STATUS_FAILURE;
+        }
+        if (strcmp(pattern, acTmpReturnValue) == 0) {
+            *value = i + 1;
+            return ANSC_STATUS_SUCCESS;
+        }
+    }
+    fprintf(stderr, "Failed to find SSID reference: %d\n", index);
+
+    return ANSC_STATUS_FAILURE;
+}
+
+static int wifi_get_security_keypassphrase(char *value, unsigned int index)
+{
+    char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
 
     sprintf(path, "Device.WiFi.AccessPoint.%d.Security.KeyPassphrase", index);
     if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
-        printf("%s %d Failed to get param value\n", __FUNCTION__, __LINE__);
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
         return ANSC_STATUS_FAILURE;
     }
     AnscCopyString(value, acTmpReturnValue);
-    printf("%s %d param value = %s\n", __FUNCTION__, __LINE__, value);
-    return 0;
+
+    return ANSC_STATUS_FAILURE;
 }
 
-static void load_ssid_profile(PCOSA_DML_EMCTL_PROFILE_CFG profile, unsigned int idx)
+static int wifi_get_security_mode(char *value, unsigned int index)
 {
-    /* Let's use this basic static mapping for now
-     * SSIDProfile.1 (Home,     2.4GHz, Fronthaul) => Device.WiFi.SSID.1
-     * SSIDProfile.1 (Home,     5GHz,   Fronthaul) => Device.WiFi.SSID.5
-     * SSIDProfile.2 (Guest,    2.4GHz, Fronthaul) => Device.WiFi.SSID.2
-     * SSIDProfile.2 (Guest,    5GHz,   Fronthaul) => Device.WiFi.SSID.6
-     * SSIDProfile.2 (Backhaul, 5GHz,   Backhaul)  => Device.WiFi.SSID.8
-     */
-    switch (idx) {
-        case 0:
-            strncpy(profile->Type, "backhaul", sizeof(profile->Type) - 1);
-            strncpy(profile->Label, "Backhaul", sizeof(profile->Label) - 1);
-            strncpy(profile->SSID, "rpi-bh", sizeof(profile->SSID) - 1);
-            strncpy(profile->FrequencyBands, "5", sizeof(profile->FrequencyBands) - 1);
-            profile->Fronthaul = FALSE;
-            profile->Backhaul = TRUE;
-            break;
-        case 1:
-            strncpy(profile->Type, "home", sizeof(profile->Type) - 1);
-            strncpy(profile->Label, "Family", sizeof(profile->Label) - 1);
-            strncpy(profile->SSID, "rpi-fh", sizeof(profile->SSID) - 1);
-            strncpy(profile->FrequencyBands, "2,5", sizeof(profile->FrequencyBands) - 1);
-            profile->Fronthaul = TRUE;
-            profile->Backhaul = FALSE;
-            break;
-        case 2:
-            strncpy(profile->Type, "guest", sizeof(profile->Type) - 1);
-            strncpy(profile->Label, "Guest", sizeof(profile->Label) - 1);
-            strncpy(profile->SSID, "rpi-guest", sizeof(profile->SSID) - 1);
-            strncpy(profile->FrequencyBands, "2,5", sizeof(profile->FrequencyBands) - 1);
-            profile->Fronthaul = TRUE;
-            profile->Backhaul = FALSE;
-            break;
-        default:
-            printf("Invalid profile index\n");
-            return;
+    char path[64] = {0};
+    char acTmpReturnValue[256] = {0};
+
+    sprintf(path, "Device.WiFi.AccessPoint.%d.Security.ModeEnabled", index);
+    if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
+        fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
+        return ANSC_STATUS_FAILURE;
     }
-    strncpy(profile->SecurityMode, "wpa2-psk", sizeof(profile->SecurityMode) - 1);
-    strncpy(profile->KeyPassphrase, "12345678", sizeof(profile->KeyPassphrase) - 1);
+    if (strcmp(acTmpReturnValue, "WPA2-Personal") == 0) {
+        strcpy(value, "wpa2-psk");
+    }
+
+    return ANSC_STATUS_FAILURE;
+}
+
+static inline void profile_set_backhaul(PCOSA_DML_EMCTL_PROFILE_CFG profile)
+{
+    strncpy(profile->Type, "backhaul", sizeof(profile->Type) - 1);
+    strncpy(profile->Label, "Backhaul", sizeof(profile->Label) - 1);
+    profile->Backhaul = TRUE;
+    profile->Fronthaul = FALSE;
+}
+
+static void profile_create_backhaul(PCOSA_DML_EMCTL_CFG emctl)
+{
+    unsigned int index;
+    PCOSA_DML_EMCTL_PROFILE_CFG base;
+    PCOSA_DML_EMCTL_PROFILE_CFG profile;
+
+    index = emctl->SSIDProfileNumberOfEntries;
+    profile = &emctl->SSIDProfiles[index];
+    base = &emctl->SSIDProfiles[0];
+    profile->Enable = TRUE;
+    strncpy(profile->SSID, "Backhaul", sizeof(profile->SSID) - 1);
+    strncpy(profile->SecurityMode, base->SecurityMode, sizeof(profile->SecurityMode) - 1);
+    strncpy(profile->KeyPassphrase, base->KeyPassphrase, sizeof(profile->KeyPassphrase) - 1);
+    profile->FrequencyBands[0] = '5';
+    profile_set_backhaul(profile);
+    profile->Indices[0] = -1;
+    profile->Indices[1] = -1;
     profile->Extender = TRUE;
     profile->Gateway = TRUE;
     profile->VLANID = -1;
+    emctl->SSIDProfileNumberOfEntries++;
+
+    return;
+}
+
+static void device_wifi_dynamic_mapper(PCOSA_DML_EMCTL_CFG emctl)
+{
+    bool found;
+    bool ssid_enable;
+    bool dedicated_backhaul = true;
+    unsigned int ap_index;
+    unsigned int ssid_count;
+    unsigned int ssid_index;
+    unsigned int profile_count;
+    unsigned int profile_2GHz_count = 0;
+    unsigned int profile_5GHz_count = 0;
+    char key[64];
+    char ssid[32];
+    char mode[32];
+    char freqband[8];
+    PCOSA_DML_EMCTL_PROFILE_CFG profile;
+    unsigned int i, j;
+
+    profile_count = emctl->SSIDProfileNumberOfEntries;
+    wifi_get_ssid_count(&ssid_count);
+    for (i = 0; i < ssid_count; i++) {
+        ssid_index = i + 1;
+        wifi_get_ssid_enable(&ssid_enable, ssid_index);
+        if (!ssid_enable) {
+            continue;
+        }
+        found = false;
+        wifi_get_radio_freqband(freqband, ssid_index);
+        wifi_get_ssid_ssid(ssid, ssid_index);
+        for (j = 0; j < profile_count; j++) {
+            profile = &emctl->SSIDProfiles[j];
+            if (strcmp(profile->SSID, ssid) == 0) {
+                strcat(profile->FrequencyBands, ",");
+                strcat(profile->FrequencyBands, freqband);
+                profile->Indices[1] = ssid_index;
+                if (freqband[0] == '2') {
+                    profile_5GHz_count--;
+                } else {
+                    profile_2GHz_count--;
+                }
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            profile = &emctl->SSIDProfiles[profile_count++];
+            memset(profile, 0, sizeof(emctl->SSIDProfiles[0]));
+            profile->Enable = TRUE;
+            wifi_get_security_index(&ap_index, ssid_index);
+            wifi_get_security_mode(mode, ap_index);
+            wifi_get_security_keypassphrase(key, ap_index);
+            strcpy(profile->SSID, ssid);
+            strcpy(profile->FrequencyBands, freqband);
+            if (freqband[0] == '2') {
+                profile_2GHz_count++;
+            } else {
+                profile_5GHz_count++;
+            }
+            strcpy(profile->SecurityMode, mode);
+            strcpy(profile->KeyPassphrase, key);
+            profile->Indices[0] = ssid_index;
+            profile->Indices[1] = -1;
+        }
+        profile->Fronthaul = TRUE;
+        profile->Extender = TRUE;
+        profile->Gateway = TRUE;
+        profile->VLANID = -1;
+    }
+    emctl->SSIDProfileNumberOfEntries = profile_count;
+    if (profile_count == 1) {
+        profile = &emctl->SSIDProfiles[0];
+        strncpy(profile->Type, "home", sizeof(profile->Type) - 1);
+        strncpy(profile->Label, "Home", sizeof(profile->Label) - 1);
+        if (dedicated_backhaul == true || profile_2GHz_count == 1) {
+            profile_create_backhaul(emctl);
+        } else {
+            profile->Backhaul = TRUE;
+        }
+    } else if (profile_count > 1) {
+        if (profile_2GHz_count == 0 && profile_5GHz_count == 0) {
+            /* multi frequency bands only */
+            if (dedicated_backhaul == true && profile_count < COSA_EMCTL_MAX_PROFILES_COUNT - 1) {
+                profile_create_backhaul(emctl);
+            } else {
+                /* use first multi-band profile (home) */
+                profile = &emctl->SSIDProfiles[0];
+                profile->Backhaul = TRUE;
+            }
+        } else if (profile_count - (profile_2GHz_count + profile_5GHz_count) == 0) {
+            /* single frequncy bands only */
+            if (profile_5GHz_count > 2) {
+                /* use last 5GHz profile */
+                for (i = 0; i < profile_count; i++) {
+                    profile = &emctl->SSIDProfiles[profile_count - i - 1];
+                    if (strcmp(profile->FrequencyBands, "5") == 0) {
+                        profile_set_backhaul(profile);
+                        break;
+                    }
+                }
+            } else if (dedicated_backhaul == true ||  profile_5GHz_count == 0) {
+                if (profile_count < COSA_EMCTL_MAX_PROFILES_COUNT - 1) {
+                    profile_create_backhaul(emctl);
+                } else {
+                    fprintf(stderr, "All profiles filled with 2.4GHz\n");
+                    return;
+                }
+            } else {
+                /* use first 5GHz profile (home) */
+                for (i = 0; i < profile_count; i++) {
+                    profile = &emctl->SSIDProfiles[i];
+                    if (strcmp(profile->FrequencyBands, "5") == 0) {
+                        profile->Backhaul = TRUE;
+                        break;
+                    }
+                }
+            }
+        } else if (profile_count - (profile_2GHz_count + profile_5GHz_count) > 1) {
+            /* mixed with 2 or more multi-bands */
+            if (profile_5GHz_count > 0) {
+                /* use last 5GHz profile */
+                for (i = 0; i < profile_count; i++) {
+                    profile = &emctl->SSIDProfiles[profile_count - i - 1];
+                    if (strcmp(profile->FrequencyBands, "5") == 0) {
+                        profile_set_backhaul(profile);
+                        break;
+                    }
+                }
+            } else if (dedicated_backhaul == true && profile_count < COSA_EMCTL_MAX_PROFILES_COUNT - 1) {
+                profile_create_backhaul(emctl);
+            } else {
+                /* use first multi-band profile (home) */
+                for (i = 0; i < profile_count; i++) {
+                    profile = &emctl->SSIDProfiles[i];
+                    if (strcmp(profile->FrequencyBands, "2") != 0 && strcmp(profile->FrequencyBands, "5") != 0) {
+                        profile->Backhaul = TRUE;
+                        break;
+                    }
+                }
+            }
+        } else {
+            /* mixed with 1 multi-band */
+            if (profile_5GHz_count > 1) {
+                /* use last 5GHz profile */
+                for (i = 0; i < profile_count; i++) {
+                    profile = &emctl->SSIDProfiles[profile_count - i - 1];
+                    if (strcmp(profile->FrequencyBands, "5") == 0) {
+                        profile_set_backhaul(profile);
+                        break;
+                    }
+                }
+            } else if (dedicated_backhaul == true && profile_count < COSA_EMCTL_MAX_PROFILES_COUNT - 1) {
+                profile_create_backhaul(emctl);
+            } else {
+                /* use first multi-band profile (home) */
+                for (i = 0; i < profile_count; i++) {
+                    profile = &emctl->SSIDProfiles[i];
+                    if (strcmp(profile->FrequencyBands, "2") != 0 && strcmp(profile->FrequencyBands, "5") != 0) {
+                        profile->Backhaul = TRUE;
+                        break;
+                    }
+                }
+            }
+        }
+        if (profile_count - (profile_2GHz_count + profile_5GHz_count) > 1) {
+            /* use last multi-band profile for guest */
+            for (i = 0; i < profile_count; i++) {
+                profile = &emctl->SSIDProfiles[profile_count - i - 1];
+                if (strcmp(profile->FrequencyBands, "2") != 0 && strcmp(profile->FrequencyBands, "5") != 0) {
+                    strncpy(profile->Type, "guest", sizeof(profile->Type) - 1);
+                    strncpy(profile->Label, "Guest", sizeof(profile->Label) - 1);
+                    break;
+                }
+            }
+        } else if (profile_2GHz_count > 1 || profile_5GHz_count > 1) {
+            bool found_2GHz = false;
+            bool found_5GHz = false;
+            unsigned int guest_index = 0;
+            /* use last of each bands as guest */
+            for (i = 0; i < profile_count; i++) {
+                profile = &emctl->SSIDProfiles[profile_count - i - 1];
+                if ((profile_2GHz_count > 1) && !found_2GHz && (strcmp(profile->FrequencyBands, "2") != 0)) {
+                    strncpy(profile->Type, "guest", sizeof(profile->Type) - 1);
+                    if (profile_5GHz_count > 1) {
+                        snprintf(profile->Label, sizeof(profile->Label) - 1, "Guest %d", guest_index++);
+                        if (found_5GHz) {
+                            break;
+                        }
+                    } else {
+                        strncpy(profile->Label, "Guest", sizeof(profile->Label) - 1);
+                        break;
+                    }
+                    found_2GHz = true;
+                }
+                if ((profile_5GHz_count > 1) && !found_5GHz && (profile->Backhaul == false) && (strcmp(profile->FrequencyBands, "5") != 0)) {
+                    strncpy(profile->Type, "guest", sizeof(profile->Type) - 1);
+                    if (profile_2GHz_count > 1) {
+                        snprintf(profile->Label, sizeof(profile->Label) - 1, "Guest %d", guest_index++);
+                        if (found_2GHz) {
+                            break;
+                        }
+                    } else {
+                        strncpy(profile->Label, "Guest", sizeof(profile->Label) - 1);
+                        break;
+                    }
+                    found_5GHz = true;
+                }
+            }
+        }
+        unsigned int home_index = 0;
+        for (i = 0; i < profile_count; i++) {
+            profile = &emctl->SSIDProfiles[i];
+            if (profile->Type[0] != 0) {
+                continue;
+            }
+            strncpy(profile->Type, "home", sizeof(profile->Type) - 1);
+            snprintf(profile->Label, sizeof(profile->Label) - 1, "Home %d", home_index++);
+        }
+    }
+
+    return;
+}
+
+static void device_wifi_static_mapper(PCOSA_DML_EMCTL_CFG emctl)
+{
+    bool ssid_enable;
+    bool backhaul_found = false;
+    unsigned int ap_index;
+    unsigned int ssid_index;
+    unsigned int profile_count;
+    char key[64];
+    char ssid[32];
+    char mode[32];
+    char freqband[8];
+    PCOSA_DML_EMCTL_PROFILE_CFG defp, profile;
+    unsigned int i, j;
+
+    profile_count = sizeof(g_default_profiles) / sizeof(g_default_profiles[0]);
+    if (profile_count >= COSA_EMCTL_MAX_PROFILES_COUNT) {
+        fprintf(stderr, "Too many profiles defined\n");
+        return;
+    }
+    emctl->SSIDProfileNumberOfEntries = profile_count;
+    for (i = 0; i < profile_count; i++) {
+        defp = &g_default_profiles[i];
+        profile = &emctl->SSIDProfiles[i];
+        memset(profile, 0, sizeof(emctl->SSIDProfiles[0]));
+        for (j = 0; j < 2; j++) {
+            if (defp->Indices[0] < 0 && defp->Indices[1] < 0) {
+                /* No SSID reference, all values must be provided at definition */
+                memcpy(profile, defp, sizeof(g_default_profiles[0]));
+                /* TODO: Add random key generation, RDK doesn't like exposed ones */
+                if (defp->Backhaul == TRUE) {
+                    backhaul_found = true;
+                }
+                break;
+            }
+            if (defp->Indices[j] < 0) {
+                continue;
+            }
+            ssid_index = defp->Indices[j];
+            wifi_get_ssid_enable(&ssid_enable, ssid_index);
+            wifi_get_radio_freqband(freqband, ssid_index);
+            wifi_get_ssid_ssid(ssid, ssid_index);
+            wifi_get_security_index(&ap_index, ssid_index);
+            wifi_get_security_mode(mode, ap_index);
+            wifi_get_security_keypassphrase(key, ap_index);
+            if (j == 0) {
+                memcpy(profile, defp, sizeof(g_default_profiles[0]));
+                profile->Enable = ssid_enable ? TRUE : FALSE;
+                strncpy(profile->SSID, ssid, sizeof(profile->SSID) - 1);
+                strncpy(profile->FrequencyBands, freqband, sizeof(profile->FrequencyBands) - 1);
+                strncpy(profile->SecurityMode, mode, sizeof(profile->SecurityMode) - 1);
+                strncpy(profile->KeyPassphrase, key, sizeof(profile->KeyPassphrase) - 1);
+                profile->Extender = TRUE;
+                profile->Gateway = TRUE;
+                profile->VLANID = -1;
+            } else {
+                strcat(profile->FrequencyBands, ",");
+                strcat(profile->FrequencyBands, freqband);
+                if (strcmp(profile->SSID, ssid) != 0 ||
+                    strcmp(profile->SecurityMode, mode) != 0 ||
+                    strcmp(profile->KeyPassphrase, key) != 0 ||
+                    strcmp(profile->Type, defp->Type) != 0 ||
+                    strcmp(profile->Label, defp->Label) != 0 ||
+                    profile->Fronthaul != defp->Fronthaul ||
+                    profile->Backhaul != defp->Backhaul) {
+                    fprintf(stderr, "Some parameters don't match\n");
+                }
+            }
+            if (profile->Backhaul == TRUE) {
+                backhaul_found = true;
+            }
+        }
+    }
+    if (!backhaul_found) {
+        if (profile_count < COSA_EMCTL_MAX_PROFILES_COUNT - 1) {
+            profile_create_backhaul(emctl);
+        } else {
+            fprintf(stderr, "No profile reserved for backhaul\n");
+            return;
+        }
+    }
+
+    return;
 }
 
 ANSC_HANDLE CosaEmctlCreate(void)
@@ -379,9 +801,10 @@ ANSC_STATUS CosaEmctlInitialize(ANSC_HANDLE hThisObject)
     pEmctl_Cfg->LinkMetricsQueryInterval = 20;
     pEmctl_Cfg->PrimaryVLANID = -1;
     AnscCopyString(pEmctl_Cfg->PrimaryVLANInterfacePattern, "^lo$|^eth.*|^wl.*");
-    pEmctl_Cfg->SSIDProfileNumberOfEntries = 3;
-    for (i = 0; i < pEmctl_Cfg->SSIDProfileNumberOfEntries; i++) {
-        load_ssid_profile(&pEmctl_Cfg->SSIDProfiles[i], i);
+    if (1) {
+        device_wifi_dynamic_mapper(pEmctl_Cfg);
+    } else {
+        device_wifi_static_mapper(pEmctl_Cfg);
     }
     pEmctl_Cfg->TopologyDiscoveryInterval = 60;
     pEmctl_Cfg->TopologyQueryInterval = 60;
@@ -543,6 +966,19 @@ int CosaEmctlProfileGetBackhaul(uint8_t index, bool *backhaul)
     return 0;
 }
 
+int CosaEmctlProfileGetEnable(uint8_t index, bool *enable)
+{
+    PCOSA_DML_EMCTL_PROFILE_CFG profile;
+
+    if (index > g_pEmctl_Cfg->SSIDProfileNumberOfEntries) {
+        return -1;
+    }
+    profile = &g_pEmctl_Cfg->SSIDProfiles[index];
+    *enable = profile->Enable;
+
+    return 0;
+}
+
 int CosaEmctlProfileGetExtender(uint8_t index, uint8_t *extender)
 {
     PCOSA_DML_EMCTL_PROFILE_CFG profile;
@@ -691,6 +1127,126 @@ int CosaEmctlProfileGetVLANID(uint8_t index, int *vlan_id)
     return 0;
 }
 
+static void profile_merge(PCOSA_DML_EMCTL_CFG emctl, unsigned int index1, unsigned int index2)
+{
+    unsigned int len;
+    unsigned int index;
+    PCOSA_DML_EMCTL_PROFILE_CFG dst;
+    PCOSA_DML_EMCTL_PROFILE_CFG profile;
+
+    if (index1 > index2) {
+        index = index1;
+        profile = &emctl->SSIDProfiles[index1];
+        dst = &emctl->SSIDProfiles[index2];
+    } else {
+        index = index2;
+        profile = &emctl->SSIDProfiles[index2];
+        dst = &emctl->SSIDProfiles[index1];
+    }
+    strcat(dst->FrequencyBands, ",");
+    strcat(dst->FrequencyBands, profile->FrequencyBands);
+    dst->Indices[1] = profile->Indices[0];
+
+    len = (emctl->SSIDProfileNumberOfEntries - index + 1) * sizeof(emctl->SSIDProfiles[0]);
+    memcpy(&emctl->SSIDProfiles[index], &emctl->SSIDProfiles[index + 1], len);
+    profile = &emctl->SSIDProfiles[emctl->SSIDProfileNumberOfEntries];
+    memset(profile, 0, sizeof(emctl->SSIDProfiles[0]));
+    profile->Indices[0] = profile->Indices[1] = -1;
+    emctl->SSIDProfileNumberOfEntries--;
+
+    return;
+}
+
+static void profile_split(PCOSA_DML_EMCTL_CFG emctl, unsigned int profile_index, unsigned int ssid_index)
+{
+    char *sp;
+    char *band;
+    char bands[17];
+    PCOSA_DML_EMCTL_PROFILE_CFG dst;
+    PCOSA_DML_EMCTL_PROFILE_CFG profile;
+
+    profile = &emctl->SSIDProfiles[profile_index];
+    dst = &emctl->SSIDProfiles[emctl->SSIDProfileNumberOfEntries];
+    dst->Backhaul = profile->Backhaul;
+    dst->Enable = profile->Enable;
+    dst->Extender = profile->Extender;
+    dst->Fronthaul = profile->Fronthaul;
+    dst->Gateway = profile->Gateway;
+    strcpy(dst->KeyPassphrase, profile->KeyPassphrase);
+    strcpy(dst->Label, profile->Label);
+    strcpy(dst->SecurityMode, profile->SecurityMode);
+    strcpy(dst->SSID, profile->SSID);
+    strcpy(dst->Type, profile->Type);
+    dst->VLANID = profile->VLANID;
+
+    strcpy(bands, profile->FrequencyBands);
+    band = strtok_r(bands, ",", &sp);
+    if (ssid_index == profile->Indices[0]) {
+        dst->Indices[0] = profile->Indices[1];
+        strcpy(profile->FrequencyBands, band);
+        band = strtok_r(NULL, ",", &sp);
+        strcpy(dst->FrequencyBands, band);
+    } else {
+        dst->Indices[0] = profile->Indices[0];
+        profile->Indices[0] = profile->Indices[1];
+        strcpy(dst->FrequencyBands, band);
+        band = strtok_r(NULL, ",", &sp);
+        strcpy(profile->FrequencyBands, band);
+    }
+    dst->Indices[1] = profile->Indices[1] = -1;
+
+    emctl->SSIDProfileNumberOfEntries++;
+
+    return;
+}
+
+static void profile_update(PCOSA_DML_EMCTL_CFG emctl, update_params_t *update)
+{
+    unsigned int ssid_index;
+    PCOSA_DML_EMCTL_PROFILE_CFG check;
+    PCOSA_DML_EMCTL_PROFILE_CFG profile;
+    unsigned int i, j;
+
+    for (i = 0; i < emctl->SSIDProfileNumberOfEntries; i++) {
+        profile = &emctl->SSIDProfiles[i];
+        ssid_index = update->index + 1;
+        if (ssid_index != profile->Indices[0] && ssid_index != profile->Indices[1]) {
+            continue;
+        }
+        if (strcmp(update->type, "SSID") == 0) {
+            if (profile->Indices[0] >= 0 && profile->Indices[1] >= 0) {
+                profile_split(emctl, i, ssid_index);
+            }
+            strncpy(profile->SSID, update->value, sizeof(profile->SSID) - 1);
+        } else if (strcmp(update->type, "KeyPassphrase") == 0) {
+            if (profile->Indices[0] >= 0 && profile->Indices[1] >= 0) {
+                profile_split(emctl, i, ssid_index);
+            }
+            strncpy(profile->KeyPassphrase, update->value, sizeof(profile->KeyPassphrase) - 1);
+        } else {
+            fprintf(stderr, "Unknown update arrived\n");
+            break;
+        }
+        if (profile->Indices[0] < 0 || profile->Indices[1] < 0) {
+            /* check for profile merge possibilities */
+            for (j = 0; j < emctl->SSIDProfileNumberOfEntries; j++) {
+                if (i == j) {
+                    continue;
+                }
+                check = &emctl->SSIDProfiles[j];
+                if (strcmp(profile->SSID, check->SSID) == 0 &&
+                    strcmp(profile->SecurityMode, check->SecurityMode) == 0 &&
+                    strcmp(profile->KeyPassphrase, check->KeyPassphrase) == 0) {
+                    profile_merge(emctl, i, j);
+                }
+            }
+        }
+        break;
+    }
+
+    return;
+}
+
 static void *update_handler(void *farg)
 {
     struct timeval tval;
@@ -765,6 +1321,7 @@ int EmctlConfigChangeCB(char *context)
     }
 
     pthread_mutex_lock(&g_emctl_mutex);
+    profile_update(g_pEmctl_Cfg, update);
     if (g_pEmctl_Cfg->updating) {
         queue_push(g_pEmctl_Cfg->updates, update);
         pthread_cond_signal(&g_emctl_cond);

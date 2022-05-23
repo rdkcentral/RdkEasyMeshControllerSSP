@@ -1160,6 +1160,10 @@ SSIDProfile_GetParamBoolValue
         *pBool = pProfile->Backhaul;
         return TRUE;
     }
+    if (AnscEqualString(pParamName, "Enable", TRUE)) {
+        *pBool = pProfile->Enable;
+        return TRUE;
+    }
     if (AnscEqualString(pParamName, "Extender", TRUE)) {
         *pBool = pProfile->Extender;
         return TRUE;
@@ -1376,6 +1380,13 @@ SSIDProfile_SetParamBoolValue
             return TRUE;
         }
         pProfile->Backhaul = TRUE;
+        return TRUE;
+    }
+    if (AnscEqualString(pParamName, "Enable", TRUE)) {
+        if (pProfile->Enable == bValue) {
+            return TRUE;
+        }
+        pProfile->Enable = TRUE;
         return TRUE;
     }
     if (AnscEqualString(pParamName, "Extender", TRUE)) {
