@@ -870,7 +870,7 @@ ChanSel_GetParamStringValue
 
     description:
 
-        This function is called to set bulk parameter values;
+        This function is called to set string parameter values;
 
     argument:   ANSC_HANDLE                 hInsContext,
                 The instance handle;
@@ -1430,7 +1430,7 @@ SSIDProfile_SetParamBoolValue
 
     description:
 
-        This function is called to set bulk parameter values;
+        This function is called to set string parameter values;
 
     argument:   ANSC_HANDLE                 hInsContext,
                 The instance handle;
