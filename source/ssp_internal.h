@@ -131,7 +131,9 @@ ssp_cancel
 (
 );
 
-
+int ssp_fini(void);
+int ssp_main(int argc, char *argv[]);
+void ssp_stack_backtrace(void);
 
 char*
 ssp_CcdIfGetComponentName
