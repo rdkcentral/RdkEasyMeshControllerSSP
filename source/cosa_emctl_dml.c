@@ -870,7 +870,7 @@ ChanSel_GetParamStringValue
 
     description:
 
-        This function is called to set bulk parameter values;
+        This function is called to set string parameter values;
 
     argument:   ANSC_HANDLE                 hInsContext,
                 The instance handle;
@@ -1160,6 +1160,10 @@ SSIDProfile_GetParamBoolValue
         *pBool = pProfile->Backhaul;
         return TRUE;
     }
+    if (AnscEqualString(pParamName, "Enable", TRUE)) {
+        *pBool = pProfile->Enable;
+        return TRUE;
+    }
     if (AnscEqualString(pParamName, "Extender", TRUE)) {
         *pBool = pProfile->Extender;
         return TRUE;
@@ -1378,6 +1382,13 @@ SSIDProfile_SetParamBoolValue
         pProfile->Backhaul = TRUE;
         return TRUE;
     }
+    if (AnscEqualString(pParamName, "Enable", TRUE)) {
+        if (pProfile->Enable == bValue) {
+            return TRUE;
+        }
+        pProfile->Enable = TRUE;
+        return TRUE;
+    }
     if (AnscEqualString(pParamName, "Extender", TRUE)) {
         if (pProfile->Extender == bValue) {
             return TRUE;
@@ -1419,7 +1430,7 @@ SSIDProfile_SetParamBoolValue
 
     description:
 
-        This function is called to set bulk parameter values;
+        This function is called to set string parameter values;
 
     argument:   ANSC_HANDLE                 hInsContext,
                 The instance handle;
