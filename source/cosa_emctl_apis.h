@@ -86,7 +86,7 @@
 #define COSA_EMCTL_MAX_PROFILE_TYPE_LEN     17
 #endif
 #ifndef COSA_EMCTL_MAX_IFLIST_LEN
-#define COSA_EMCTL_MAX_IFLIST_LEN           33
+#define COSA_EMCTL_MAX_IFLIST_LEN           64
 #endif
 #ifndef COSA_EMCTL_MAC_ADDR_LEN
 #define COSA_EMCTL_MAC_ADDR_LEN             18

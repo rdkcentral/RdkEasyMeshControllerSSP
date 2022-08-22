@@ -25,7 +25,7 @@
 
 AM_CPPFLAGS = -Wall -Werror -D_GNU_SOURCE
 
-AM_CPPFLAGS = -I$(top_srcdir)/hal/include \
+AM_CPPFLAGS += -I$(top_srcdir)/hal/include \
 		-I$(top_srcdir)/source/ssp \
 		-I=${includedir} \
 		-I=${includedir}/ccsp

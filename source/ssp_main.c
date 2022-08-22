@@ -222,6 +222,9 @@ int ssp_main(int argc, char* argv[])
     int                             cmdChar            = 0;
     int                             idx = 0;
 
+    (void) bRunAsDaemon;
+    (void) cmdChar;
+
     extern ANSC_HANDLE bus_handle;
     char *subSys            = NULL;  
     DmErr_t    err;
@@ -316,7 +319,7 @@ int ssp_main(int argc, char* argv[])
     }
 #endif
 #endif
-    return 0;
+    return returnStatus;
 }
 
 int ssp_fini(void)

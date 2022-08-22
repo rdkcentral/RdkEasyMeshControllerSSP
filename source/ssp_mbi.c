@@ -105,7 +105,7 @@ ssp_Mbi_MessageBusEngage
                 component_id,
                 config_file,
                 &bus_handle,
-                Ansc_AllocateMemory_Callback,           /* mallocfc, use default */
+                (CCSP_MESSAGE_BUS_MALLOC)Ansc_AllocateMemory_Callback,           /* mallocfc, use default */
                 Ansc_FreeMemory_Callback                /* freefc,   use default */
             );
 
@@ -116,7 +116,7 @@ ssp_Mbi_MessageBusEngage
         return returnStatus;
     }
 
-    CcspTraceInfo(("INFO: bus_handle: 0x%8x \n", bus_handle));
+    CcspTraceInfo(("INFO: bus_handle: 0x%8p \n", bus_handle));
     g_MessageBusHandle_Irep = bus_handle;
     AnscCopyString(g_SubSysPrefix_Irep, g_Subsystem);
 
@@ -153,7 +153,7 @@ ssp_Mbi_MessageBusEngage
 
     if ( returnStatus != CCSP_Message_Bus_OK )
     {
-        CcspTraceError((" !!! CCSP_Message_Bus_Register_Path ERROR returnStatus: %d\n!!!\n", returnStatus));
+        CcspTraceError((" !!! CCSP_Message_Bus_Register_Path ERROR returnStatus: %ld\n!!!\n", returnStatus));
 
         return returnStatus;
     }
@@ -170,7 +170,7 @@ ssp_Mbi_MessageBusEngage
 
     if ( returnStatus != CCSP_Message_Bus_OK )
     {
-         CcspTraceError((" !!! CCSP_Message_Bus_Register_Event: CurrentSessionIDSignal ERROR returnStatus: %d!!!\n", returnStatus));
+         CcspTraceError((" !!! CCSP_Message_Bus_Register_Event: CurrentSessionIDSignal ERROR returnStatus: %ld!!!\n", returnStatus));
 
         return returnStatus;
     }

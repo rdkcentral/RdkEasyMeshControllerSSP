@@ -115,6 +115,9 @@ COMPONENT_COMMON_EMCTL,  *PCOMPONENT_COMMON_EMCTL;
 
 //int  cmd_dispatch(int  command);
 
+int ssp_fini(void);
+int ssp_main(int argc, char *argv[]);
+void ssp_stack_backtrace(void);
 
 ANSC_STATUS
 ssp_create

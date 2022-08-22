@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "collection.h"
 
@@ -66,6 +67,10 @@ void *queue_pop(queue_t *q)
 {
     element_t *e, *tmp = NULL;
     void *data;
+
+    if (q == NULL) {
+        return NULL;
+    }
 
     e = q->head;
     if (e == NULL) {
