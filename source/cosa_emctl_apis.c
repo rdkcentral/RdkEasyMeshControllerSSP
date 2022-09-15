@@ -302,7 +302,7 @@ static void get_mac_addresses(PCOSA_DML_EMCTL_CFG cfg)
 
 static int wifi_get_radio_freqband(char *value, unsigned int index)
 {
-    char path[64] = {0};
+    char path[512] = {0};
     char acTmpReturnValue[256] = {0};
 
     sprintf(path, "Device.WiFi.SSID.%d.LowerLayers", index);
@@ -382,7 +382,7 @@ static int wifi_get_security_index(unsigned int *value, unsigned int index)
     unsigned int ap_count;
     unsigned int i;
 
-    sprintf(pattern, "Device.WiFi.SSID.%d.", index);
+    sprintf(pattern, "Device.WiFi.SSID.%u.", index);
     sprintf(path, "Device.WiFi.AccessPointNumberOfEntries");
     if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
         fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
@@ -410,7 +410,7 @@ static int wifi_get_security_keypassphrase(char *value, unsigned int index)
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
 
-    sprintf(path, "Device.WiFi.AccessPoint.%d.Security.KeyPassphrase", index);
+    sprintf(path, "Device.WiFi.AccessPoint.%u.Security.KeyPassphrase", index);
     if (ANSC_STATUS_FAILURE == DmlEmctlGetParamValues(path, acTmpReturnValue, sizeof(acTmpReturnValue))) {
         fprintf(stderr, "Failed to get param values(%s-%d)\n", __FUNCTION__, __LINE__);
         return ANSC_STATUS_FAILURE;
@@ -473,10 +473,10 @@ static void profile_create_backhaul(PCOSA_DML_EMCTL_CFG emctl)
 static void device_wifi_dynamic_mapper(PCOSA_DML_EMCTL_CFG emctl)
 {
     bool found;
-    bool ssid_enable;
+    bool ssid_enable = false;
     bool dedicated_backhaul = true;
     unsigned int ap_index;
-    unsigned int ssid_count;
+    unsigned int ssid_count = 0;
     unsigned int ssid_index;
     unsigned int profile_count;
     unsigned int profile_2GHz_count = 0;
@@ -489,7 +489,9 @@ static void device_wifi_dynamic_mapper(PCOSA_DML_EMCTL_CFG emctl)
     unsigned int i, j;
 
     profile_count = emctl->SSIDProfileNumberOfEntries;
-    wifi_get_ssid_count(&ssid_count);
+    if (wifi_get_ssid_count(&ssid_count) == ANSC_STATUS_FAILURE) {
+        return;
+    }
     for (i = 0; i < ssid_count; i++) {
         ssid_index = i + 1;
         wifi_get_ssid_enable(&ssid_enable, ssid_index);
@@ -518,9 +520,15 @@ static void device_wifi_dynamic_mapper(PCOSA_DML_EMCTL_CFG emctl)
             profile = &emctl->SSIDProfiles[profile_count++];
             memset(profile, 0, sizeof(emctl->SSIDProfiles[0]));
             profile->Enable = TRUE;
-            wifi_get_security_index(&ap_index, ssid_index);
-            wifi_get_security_mode(mode, ap_index);
-            wifi_get_security_keypassphrase(key, ap_index);
+            if (wifi_get_security_index(&ap_index, ssid_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_security_mode(mode, ap_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_security_keypassphrase(key, ap_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
             strcpy(profile->SSID, ssid);
             strcpy(profile->FrequencyBands, freqband);
             if (freqband[0] == '2') {
@@ -730,12 +738,24 @@ static void device_wifi_static_mapper(PCOSA_DML_EMCTL_CFG emctl)
                 continue;
             }
             ssid_index = defp->Indices[j];
-            wifi_get_ssid_enable(&ssid_enable, ssid_index);
-            wifi_get_radio_freqband(freqband, ssid_index);
-            wifi_get_ssid_ssid(ssid, ssid_index);
-            wifi_get_security_index(&ap_index, ssid_index);
-            wifi_get_security_mode(mode, ap_index);
-            wifi_get_security_keypassphrase(key, ap_index);
+            if (wifi_get_ssid_enable(&ssid_enable, ssid_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_radio_freqband(freqband, ssid_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_ssid_ssid(ssid, ssid_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_security_index(&ap_index, ssid_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_security_mode(mode, ap_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
+            if (wifi_get_security_keypassphrase(key, ap_index) == ANSC_STATUS_FAILURE) {
+                continue;
+            }
             if (j == 0) {
                 memcpy(profile, defp, sizeof(g_default_profiles[0]));
                 profile->Enable = ssid_enable ? TRUE : FALSE;
@@ -789,18 +809,17 @@ ANSC_HANDLE CosaEmctlCreate(void)
 ANSC_STATUS CosaEmctlInitialize(ANSC_HANDLE hThisObject)
 {
     PCOSA_DML_EMCTL_CFG pEmctl_Cfg = (PCOSA_DML_EMCTL_CFG)hThisObject;
-    unsigned int i;
 
     pEmctl_Cfg->ConfigRenewInterval = 5;
     pEmctl_Cfg->ConfigRenewMaxRetry = 3;
     pEmctl_Cfg->ConfigureBackhaulStation = 1;
     pEmctl_Cfg->DeadAgentDetectionInterval = 30;
     pEmctl_Cfg->Enable = 1;
-    AnscCopyString(pEmctl_Cfg->InterfaceList, "^lo$|^eth.*|^wl.*");
+    AnscCopyString(pEmctl_Cfg->InterfaceList, "^lo$|^eth.*|^wl.*|^sw_.*|^n[rs]gmii.*");
     pEmctl_Cfg->IsMaster = 1;
     pEmctl_Cfg->LinkMetricsQueryInterval = 20;
     pEmctl_Cfg->PrimaryVLANID = -1;
-    AnscCopyString(pEmctl_Cfg->PrimaryVLANInterfacePattern, "^lo$|^eth.*|^wl.*");
+    AnscCopyString(pEmctl_Cfg->PrimaryVLANInterfacePattern, "^lo$|^eth.*|^wl.*|^sw_.*|^n[rs]gmii.*");
     if (1) {
         device_wifi_dynamic_mapper(pEmctl_Cfg);
     } else {
@@ -1287,13 +1306,11 @@ static void *update_handler(void *farg)
 
 int EmctlConfigChangeCB(char *context)
 {
-    PCOSA_DML_EMCTL_PROFILE_CFG profile;
     update_params_t *update;
     char *p_tok, *st;
     pthread_attr_t attr;
     pthread_attr_t *attrp = NULL;
     pthread_t thread;
-    size_t len = 0;
     int i = 0;
 
     if (g_pEmctl_Cfg == NULL) {
