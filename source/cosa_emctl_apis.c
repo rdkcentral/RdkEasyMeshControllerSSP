@@ -1387,6 +1387,7 @@ static void *update_handler(void *farg)
 int EmctlConfigChangeCB(char *context)
 {
     update_params_t *update;
+    bool notify_needed;
     char *p_tok, *st;
     pthread_attr_t attr;
     pthread_attr_t *attrp = NULL;
