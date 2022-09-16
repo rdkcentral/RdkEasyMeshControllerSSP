@@ -97,6 +97,7 @@ EasyMeshController_GetParamUlongValue
         ULONG*                      puLong
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "ConfigRenewInterval", TRUE)) {
@@ -177,6 +178,7 @@ EasyMeshController_GetParamBoolValue
         BOOL*                       pBool
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "ConfigureBackhaulStation", TRUE)) {
@@ -242,6 +244,7 @@ EasyMeshController_GetParamStringValue
         ULONG*                      pulSize
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "InterfaceList", TRUE)) {
@@ -326,6 +329,7 @@ EasyMeshController_GetParamIntValue
         int*                      	 pInt
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "PrimaryVLANID", TRUE)) {
@@ -374,6 +378,7 @@ EasyMeshController_SetParamUlongValue
         ULONG                       uValue
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "ConfigRenewInterval", TRUE)) {
@@ -482,6 +487,7 @@ EasyMeshController_SetParamStringValue
         char*                       pString
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "InterfaceList", TRUE)) {
@@ -563,6 +569,7 @@ EasyMeshController_SetParamBoolValue
         BOOL                        bValue
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "ConfigureBackhaulStation", TRUE)) {
@@ -628,6 +635,7 @@ EasyMeshController_SetParamIntValue
         int                         iValue
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "PrimaryVLANID", TRUE)) {
@@ -680,6 +688,10 @@ EasyMeshController_Validate
         ULONG*                      puLength
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
+    UNREFERENCED_PARAMETER(pReturnParamName);
+    UNREFERENCED_PARAMETER(puLength);
+
     return TRUE;
 }
 
@@ -711,6 +723,8 @@ EasyMeshController_Commit
         ANSC_HANDLE                 hInsContext
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
+
     return 0;
 }
 
@@ -743,6 +757,8 @@ EasyMeshController_Rollback
         ANSC_HANDLE                 hInsContext
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
+
     return 0;
 }
 
@@ -752,8 +768,8 @@ EasyMeshController_Rollback
 
     EasyMeshController.ChanSel.
 
-    *  ChanSel_GetParamBoolValue
     *  ChanSel_GetParamStringValue
+    *  ChanSel_SetParamStringValue
 
 **********************************************************************/
 /**********************************************************************
@@ -803,6 +819,7 @@ ChanSel_GetParamStringValue
         ULONG*                      pulSize
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "AllowedChannelList2G", TRUE)) {
@@ -892,6 +909,7 @@ ChanSel_SetParamStringValue
         char*                       pString
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
     PCOSA_DML_EMCTL_CFG cfg = g_pEmctl_Cfg;
 
     if (AnscEqualString(pParamName, "AllowedChannelList2G", TRUE)) {
@@ -946,8 +964,6 @@ ChanSel_SetParamStringValue
 
     *  SSIDProfile_GetEntryCount
     *  SSIDProfile_GetEntry
-    *  SSIDProfile_AddEntry
-    *  SSIDProfile_DelEntry
     *  SSIDProfile_GetParamBoolValue
     *  SSIDProfile_GetParamStringValue
     *  SSIDProfile_GetParamIntValue
@@ -1043,77 +1059,70 @@ SSIDProfile_GetEntry
     return pProfile;
 }
 
-/**********************************************************************
+/**************************************************************************
 
     caller:     owner of this object
 
     prototype:
 
-        ANSC_HANDLE
-        SSIDProfile_AddEntry
+        BOOL
+        SSIDProfile_IsUpdatedSSIDProfile_Synchronize
             (
-                ANSC_HANDLE                 hInsContext,
-                ULONG*                      pInsNumber
+                ANSC_HANDLE                 hInsContext
             );
 
     description:
 
-        This function is called to add a new entry.
+        This function is checking whether the table is updated or not.
 
     argument:   ANSC_HANDLE                 hInsContext,
                 The instance handle;
 
-                ULONG*                      pInsNumber
-                The output instance number;
+    return:     TRUE or FALSE.
 
-    return:     The handle of new added entry.
-
-**********************************************************************/
-ANSC_HANDLE
-SSIDProfile_AddEntry
+**************************************************************************/
+BOOL
+SSIDProfile_IsUpdated
     (
-        ANSC_HANDLE                 hInsContext,
-        ULONG*                      pInsNumber
+        ANSC_HANDLE                 hInsContext
     )
 {
-    return NULL;
+    UNREFERENCED_PARAMETER(hInsContext);
+
+    return TRUE;
 }
 
-/**********************************************************************
+/**************************************************************************
 
     caller:     owner of this object
 
     prototype:
 
         ULONG
-        SSIDProfile_DelEntry
+        SSIDProfile_Synchronize
             (
-                ANSC_HANDLE                 hInsContext,
-                ANSC_HANDLE                 hInstance
+                ANSC_HANDLE                 hInsContext
             );
 
     description:
 
-        This function is called to delete an exist entry.
+        This function is called to synchronize the table.
 
     argument:   ANSC_HANDLE                 hInsContext,
                 The instance handle;
 
-                ANSC_HANDLE                 hInstance
-                The exist entry handle;
-
     return:     The status of the operation.
 
-**********************************************************************/
+**************************************************************************/
 ULONG
-SSIDProfile_DelEntry
+SSIDProfile_Synchronize
     (
-        ANSC_HANDLE                 hInsContext,
-        ANSC_HANDLE                 hInstance
+        ANSC_HANDLE                 hInsContext
     )
 {
-    ANSC_STATUS                     returnStatus         = ANSC_STATUS_SUCCESS;
-    return returnStatus;
+    UNREFERENCED_PARAMETER(hInsContext);
+
+    return ANSC_STATUS_SUCCESS;
 }
 
 /**********************************************************************
@@ -1596,6 +1605,10 @@ SSIDProfile_Validate
         ULONG*                      puLength
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
+    UNREFERENCED_PARAMETER(pReturnParamName);
+    UNREFERENCED_PARAMETER(puLength);
+
     return TRUE;
 }
 
@@ -1627,6 +1640,8 @@ SSIDProfile_Commit
         ANSC_HANDLE                 hInsContext
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
+
     return 0;
 }
 
@@ -1659,5 +1674,7 @@ SSIDProfile_Rollback
         ANSC_HANDLE                 hInsContext
     )
 {
+    UNREFERENCED_PARAMETER(hInsContext);
+
     return 0;
 }

@@ -219,11 +219,12 @@ int ssp_main(int argc, char* argv[])
 {
     ANSC_STATUS                     returnStatus       = ANSC_STATUS_SUCCESS;
     BOOL                            bRunAsDaemon       = TRUE;
+#if defined(_ANSC_WINDOWSNT)
     int                             cmdChar            = 0;
+#endif
     int                             idx = 0;
 
     (void) bRunAsDaemon;
-    (void) cmdChar;
 
     extern ANSC_HANDLE bus_handle;
     char *subSys            = NULL;  

@@ -203,8 +203,10 @@
           <name>SSIDProfile</name>
           <objectType>dynamicTable</objectType>
           <functions>
-            <func_GetEntryCount>SSIDProfile_GetEntryCount</func_GetEntryCount>
             <func_GetEntry>SSIDProfile_GetEntry</func_GetEntry>
+            <func_GetEntryCount>SSIDProfile_GetEntryCount</func_GetEntryCount>
+            <func_IsUpdated>SSIDProfile_IsUpdated</func_IsUpdated>
+            <func_Synchronize>SSIDProfile_Synchronize</func_Synchronize>
             <func_GetParamBoolValue>SSIDProfile_GetParamBoolValue</func_GetParamBoolValue>
             <func_SetParamBoolValue>SSIDProfile_SetParamBoolValue</func_SetParamBoolValue>
             <func_GetParamStringValue>SSIDProfile_GetParamStringValue</func_GetParamStringValue>

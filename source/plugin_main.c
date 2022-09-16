@@ -90,6 +90,8 @@ COSA_Init
 
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_GetEntryCount", SSIDProfile_GetEntryCount);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_GetEntry", SSIDProfile_GetEntry);
+    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_IsUpdated", SSIDProfile_IsUpdated);
+    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_Synchronize", SSIDProfile_Synchronize);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_GetParamBoolValue", SSIDProfile_GetParamBoolValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_SetParamBoolValue", SSIDProfile_SetParamBoolValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "SSIDProfile_GetParamStringValue", SSIDProfile_GetParamStringValue);
@@ -112,7 +114,8 @@ COSA_IsObjectSupported
         char*                        pObjName
     )
 {
-    
+    UNREFERENCED_PARAMETER(pObjName);
+
     return TRUE;
 }
 
