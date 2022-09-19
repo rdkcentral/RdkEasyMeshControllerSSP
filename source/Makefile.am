@@ -35,9 +35,9 @@ ACLOCAL_AMFLAGS = -I m4
 
 noinst_LIBRARIES = libssp.a
 
-libssp_a_CFLAGS = -I$(top_srcdir)/source/ssp \
-                  -I=${includedir} \
-                  -I=${includedir}/ccsp
+libssp_a_CPPFLAGS = -I$(top_srcdir)/source/ssp \
+                    -I=${includedir} \
+                    -I=${includedir}/ccsp
 
 libssp_a_SOURCES = $(srcdir)/collection.c \
                    $(srcdir)/cosa_emctl_dml.c \
@@ -47,4 +47,5 @@ libssp_a_SOURCES = $(srcdir)/collection.c \
                    $(srcdir)/ssp_main.c \
                    $(srcdir)/ssp_mbi.c
 
-libssp_a_LDFLAGS = -lsyscfg -lsysevent -lpthread -lccsp_common $(DBUS_LIBS) -llog4c
+libssp_a_LDFLAGS = -lsyscfg -lsysevent -lpthread -lccsp_common -llog4c
+libssp_a_LDFLAGS += $(DBUS_LIBS)
