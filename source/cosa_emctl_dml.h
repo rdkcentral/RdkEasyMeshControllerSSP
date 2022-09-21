@@ -185,8 +185,6 @@ ChanSel_SetParamStringValue
 
     *  SSIDProfile_GetEntryCount
     *  SSIDProfile_GetEntry
-    *  SSIDProfile_AddEntry
-    *  SSIDProfile_DelEntry
     *  SSIDProfile_GetParamBoolValue
     *  SSIDProfile_GetParamStringValue
     *  SSIDProfile_GetParamIntValue
@@ -212,18 +210,16 @@ SSIDProfile_GetEntry
         ULONG*                      pInsNumber
     );
 
-ANSC_HANDLE
-SSIDProfile_AddEntry
+BOOL
+SSIDProfile_IsUpdated
     (
-        ANSC_HANDLE                 hInsContext,
-        ULONG*                      pInsNumber
+        ANSC_HANDLE                 hInsContext
     );
 
 ULONG
-SSIDProfile_DelEntry
+SSIDProfile_Synchronize
     (
-        ANSC_HANDLE                 hInsContext,
-        ANSC_HANDLE                 hInstance
+        ANSC_HANDLE                 hInsContext
     );
 
 BOOL

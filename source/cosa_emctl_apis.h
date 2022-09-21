@@ -122,8 +122,12 @@ struct _COSA_DML_EMCTL_PROFILE_CFG {
 typedef struct _COSA_DML_EMCTL_PROFILE_CFG COSA_DML_EMCTL_PROFILE_CFG, *PCOSA_DML_EMCTL_PROFILE_CFG;
 
 struct _COSA_DML_EMCTL_CFG {
+    char                        AllowedBandwidth2G[COSA_EMCTL_MAX_CHANNEL_SET];
+    char                        AllowedBandwidth5G[COSA_EMCTL_MAX_CHANNEL_SET];
+    char                        AllowedBandwidth6G[COSA_EMCTL_MAX_CHANNEL_SET];
     char                        AllowedChannelList2G[COSA_EMCTL_MAX_CHANNEL_SET];
     char                        AllowedChannelList5G[COSA_EMCTL_MAX_CHANNEL_SET];
+    char                        AllowedChannelList6G[COSA_EMCTL_MAX_CHANNEL_SET];
     char                        BandLock5G[COSA_EMCTL_MAX_CHANNEL_SET];
     ULONG                       ConfigRenewInterval;
     ULONG                       ConfigRenewMaxRetry;
@@ -131,6 +135,7 @@ struct _COSA_DML_EMCTL_CFG {
     ULONG                       DeadAgentDetectionInterval;
     char                        Default2GPreferredChannelList[COSA_EMCTL_MAX_CHANNEL_SET];
     char                        Default5GPreferredChannelList[COSA_EMCTL_MAX_CHANNEL_SET];
+    char                        Default6GPreferredChannelList[COSA_EMCTL_MAX_CHANNEL_SET];
     ULONG                       DefaultPCP;
     BOOL                        Enable;
     char                        InterfaceList[COSA_EMCTL_MAX_IFLIST_LEN];
@@ -156,8 +161,12 @@ typedef struct _COSA_DML_EMCTL_CFG COSA_DML_EMCTL_CFG, *PCOSA_DML_EMCTL_CFG;
 ANSC_HANDLE CosaEmctlCreate(void);
 ANSC_STATUS CosaEmctlInitialize(ANSC_HANDLE hThisObject);
 
+int CosaEmctlGetAllowedBandwidth2G(char *value);
+int CosaEmctlGetAllowedBandwidth5G(char *value);
+int CosaEmctlGetAllowedBandwidth6G(char *value);
 int CosaEmctlGetAllowedChannelList2G(char *value);
 int CosaEmctlGetAllowedChannelList5G(char *value);
+int CosaEmctlGetAllowedChannelList6G(char *value);
 int CosaEmctlGetBandLock5G(char *value);
 int CosaEmctlGetConfigRenewInterval(unsigned int *value);
 int CosaEmctlGetConfigRenewMaxRetry(unsigned int *value);
@@ -165,6 +174,7 @@ int CosaEmctlGetConfigureBackhaulStation(uint8_t *value);
 int CosaEmctlGetDeadAgentDetectionInterval(unsigned int *value);
 int CosaEmctlGetDefault2GPreferredChannelList(char *value);
 int CosaEmctlGetDefault5GPreferredChannelList(char *value);
+int CosaEmctlGetDefault6GPreferredChannelList(char *value);
 int CosaEmctlGetDefaultPCP(uint8_t *value);
 int CosaEmctlGetEnable(unsigned int *value);
 int CosaEmctlGetInterfaceList(char *value);

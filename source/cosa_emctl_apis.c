@@ -94,11 +94,11 @@ static COSA_DML_EMCTL_PROFILE_CFG g_default_profiles[] = {
     }
 };
 
-static int DmlEmctlGetParamValues(char *pathname, char *value, size_t valuesize)
+static ANSC_STATUS DmlEmctlGetParamValues(char *pathname, char *value, size_t valuesize)
 {
-    int ret = 0;
+    int ret;
     int i;
-    int retval = -1; // default failure
+    ANSC_STATUS retval = ANSC_STATUS_FAILURE; // default failure
     const char *subsystem_prefix = "eRT.";
     int size = 0;
     int size2 = 0;
@@ -138,7 +138,7 @@ static int DmlEmctlGetParamValues(char *pathname, char *value, size_t valuesize)
         if (size > 0) {
             if (val[0]->parameterValue && strlen(val[0]->parameterValue) != 0) {
                 snprintf(value, valuesize, "%s", val[0]->parameterValue);
-                retval = 0; // set success
+                retval = ANSC_STATUS_SUCCESS; // set success
             }
         }
         free_parameterValStruct_t (bus_handle, size, val);
@@ -175,11 +175,11 @@ next:
     return retval;
 }
 
-static int DmlEmctlSetParamValues(const char *pathname, enum dataType_e type, const char *value, int commit)
+static ANSC_STATUS DmlEmctlSetParamValues(const char *pathname, enum dataType_e type, const char *value, int commit)
 {
-    int ret = 0;
+    int ret;
     int i;
-    int retval = -1; // default failure
+    ANSC_STATUS retval = ANSC_STATUS_FAILURE; // default failure
     const char *subsystem_prefix = "eRT.";
     int size2 = 0;
     const char *dst_pathname_cr =  "eRT.com.cisco.spvtg.ccsp.CR";
@@ -300,7 +300,7 @@ static void get_mac_addresses(PCOSA_DML_EMCTL_CFG cfg)
     AnscCopyString(cfg->MACAddress, macstr);
 }
 
-static int wifi_get_radio_freqband(char *value, unsigned int index)
+static ANSC_STATUS wifi_get_radio_freqband(char *value, unsigned int index)
 {
     char path[512] = {0};
     char acTmpReturnValue[256] = {0};
@@ -322,10 +322,10 @@ static int wifi_get_radio_freqband(char *value, unsigned int index)
         strcpy(value, "2");
     }
 
-    return 0;
+    return ANSC_STATUS_SUCCESS;
 }
 
-static int wifi_get_ssid_count(unsigned int *value)
+static ANSC_STATUS wifi_get_ssid_count(unsigned int *value)
 {
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
@@ -337,10 +337,10 @@ static int wifi_get_ssid_count(unsigned int *value)
     }
     *value = (unsigned int)atoi(acTmpReturnValue);
 
-    return 0;
+    return ANSC_STATUS_SUCCESS;
 }
 
-static int wifi_get_ssid_enable(bool *value, unsigned int index)
+static ANSC_STATUS wifi_get_ssid_enable(bool *value, unsigned int index)
 {
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
@@ -356,10 +356,10 @@ static int wifi_get_ssid_enable(bool *value, unsigned int index)
         *value = false;
     }
 
-    return 0;
+    return ANSC_STATUS_SUCCESS;
 }
 
-static int wifi_get_ssid_ssid(char *value, unsigned int index)
+static ANSC_STATUS wifi_get_ssid_ssid(char *value, unsigned int index)
 {
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
@@ -371,10 +371,10 @@ static int wifi_get_ssid_ssid(char *value, unsigned int index)
     }
     AnscCopyString(value, acTmpReturnValue);
 
-    return 0;
+    return ANSC_STATUS_SUCCESS;
 }
 
-static int wifi_get_security_index(unsigned int *value, unsigned int index)
+static ANSC_STATUS wifi_get_security_index(unsigned int *value, unsigned int index)
 {
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
@@ -405,7 +405,7 @@ static int wifi_get_security_index(unsigned int *value, unsigned int index)
     return ANSC_STATUS_FAILURE;
 }
 
-static int wifi_get_security_keypassphrase(char *value, unsigned int index)
+static ANSC_STATUS wifi_get_security_keypassphrase(char *value, unsigned int index)
 {
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
@@ -417,10 +417,10 @@ static int wifi_get_security_keypassphrase(char *value, unsigned int index)
     }
     AnscCopyString(value, acTmpReturnValue);
 
-    return ANSC_STATUS_FAILURE;
+    return ANSC_STATUS_SUCCESS;
 }
 
-static int wifi_get_security_mode(char *value, unsigned int index)
+static ANSC_STATUS wifi_get_security_mode(char *value, unsigned int index)
 {
     char path[64] = {0};
     char acTmpReturnValue[256] = {0};
@@ -434,7 +434,7 @@ static int wifi_get_security_mode(char *value, unsigned int index)
         strcpy(value, "wpa2-psk");
     }
 
-    return ANSC_STATUS_FAILURE;
+    return ANSC_STATUS_SUCCESS;
 }
 
 static inline void profile_set_backhaul(PCOSA_DML_EMCTL_PROFILE_CFG profile)
@@ -475,7 +475,7 @@ static void device_wifi_dynamic_mapper(PCOSA_DML_EMCTL_CFG emctl)
     bool found;
     bool ssid_enable = false;
     bool dedicated_backhaul = true;
-    unsigned int ap_index;
+    unsigned int ap_index = 0;
     unsigned int ssid_count = 0;
     unsigned int ssid_index;
     unsigned int profile_count;
@@ -833,6 +833,24 @@ ANSC_STATUS CosaEmctlInitialize(ANSC_HANDLE hThisObject)
     return ANSC_STATUS_SUCCESS;
 }
 
+int CosaEmctlGetAllowedBandwidth2G(char *value)
+{
+    AnscCopyString(value, g_pEmctl_Cfg->AllowedBandwidth2G);
+    return 0;
+}
+
+int CosaEmctlGetAllowedBandwidth5G(char *value)
+{
+    AnscCopyString(value, g_pEmctl_Cfg->AllowedBandwidth5G);
+    return 0;
+}
+
+int CosaEmctlGetAllowedBandwidth6G(char *value)
+{
+    AnscCopyString(value, g_pEmctl_Cfg->AllowedBandwidth6G);
+    return 0;
+}
+
 int CosaEmctlGetAllowedChannelList2G(char *value)
 {
     AnscCopyString(value, g_pEmctl_Cfg->AllowedChannelList2G);
@@ -842,6 +860,12 @@ int CosaEmctlGetAllowedChannelList2G(char *value)
 int CosaEmctlGetAllowedChannelList5G(char *value)
 {
     AnscCopyString(value, g_pEmctl_Cfg->AllowedChannelList5G);
+    return 0;
+}
+
+int CosaEmctlGetAllowedChannelList6G(char *value)
+{
+    AnscCopyString(value, g_pEmctl_Cfg->AllowedChannelList6G);
     return 0;
 }
 
@@ -878,6 +902,12 @@ int CosaEmctlGetDeadAgentDetectionInterval(unsigned int *value)
 int CosaEmctlGetDefault2GPreferredChannelList(char *value)
 {
     AnscCopyString(value, g_pEmctl_Cfg->Default2GPreferredChannelList);
+    return 0;
+}
+
+int CosaEmctlGetDefault6GPreferredChannelList(char *value)
+{
+    AnscCopyString(value, g_pEmctl_Cfg->Default6GPreferredChannelList);
     return 0;
 }
 
@@ -1185,6 +1215,10 @@ static void profile_split(PCOSA_DML_EMCTL_CFG emctl, unsigned int profile_index,
     PCOSA_DML_EMCTL_PROFILE_CFG profile;
 
     profile = &emctl->SSIDProfiles[profile_index];
+    if (profile->Indices[0] < 0 || profile->Indices[1] < 0) {
+        return;
+    }
+
     dst = &emctl->SSIDProfiles[emctl->SSIDProfileNumberOfEntries];
     dst->Backhaul = profile->Backhaul;
     dst->Enable = profile->Enable;
@@ -1200,7 +1234,7 @@ static void profile_split(PCOSA_DML_EMCTL_CFG emctl, unsigned int profile_index,
 
     strcpy(bands, profile->FrequencyBands);
     band = strtok_r(bands, ",", &sp);
-    if (ssid_index == profile->Indices[0]) {
+    if (ssid_index == (unsigned int)profile->Indices[0]) {
         dst->Indices[0] = profile->Indices[1];
         strcpy(profile->FrequencyBands, band);
         band = strtok_r(NULL, ",", &sp);
@@ -1219,8 +1253,11 @@ static void profile_split(PCOSA_DML_EMCTL_CFG emctl, unsigned int profile_index,
     return;
 }
 
-static void profile_update(PCOSA_DML_EMCTL_CFG emctl, update_params_t *update)
+static int profile_update(PCOSA_DML_EMCTL_CFG emctl, update_params_t *update)
 {
+    char *value;
+    char *sec_type;
+    char *auth_mode;
     unsigned int ssid_index;
     PCOSA_DML_EMCTL_PROFILE_CFG check;
     PCOSA_DML_EMCTL_PROFILE_CFG profile;
@@ -1229,19 +1266,61 @@ static void profile_update(PCOSA_DML_EMCTL_CFG emctl, update_params_t *update)
     for (i = 0; i < emctl->SSIDProfileNumberOfEntries; i++) {
         profile = &emctl->SSIDProfiles[i];
         ssid_index = update->index + 1;
-        if (ssid_index != profile->Indices[0] && ssid_index != profile->Indices[1]) {
+        if (ssid_index != (unsigned int)profile->Indices[0] &&
+            ssid_index != (unsigned int)profile->Indices[1]) {
             continue;
         }
-        if (strcmp(update->type, "SSID") == 0) {
-            if (profile->Indices[0] >= 0 && profile->Indices[1] >= 0) {
-                profile_split(emctl, i, ssid_index);
+        if (strcmp(update->type, "SSIDEnable") == 0) {
+            profile_split(emctl, i, ssid_index);
+            if (strcmp(update->value, "0") == 0) {
+                profile->Enable = FALSE;
+            } else {
+                profile->Enable = TRUE;
             }
+        } else if (strcmp(update->type, "SSID") == 0) {
+            profile_split(emctl, i, ssid_index);
             strncpy(profile->SSID, update->value, sizeof(profile->SSID) - 1);
-        } else if (strcmp(update->type, "KeyPassphrase") == 0) {
-            if (profile->Indices[0] >= 0 && profile->Indices[1] >= 0) {
-                profile_split(emctl, i, ssid_index);
+        } else if (strcmp(update->type, "SecMode") == 0) {
+            profile_split(emctl, i, ssid_index);
+            /* Do not modify update */
+            value = strdup(update->value);
+            sec_type = value;
+            auth_mode = strchr(value, ';');
+            if (auth_mode) {
+                *(auth_mode++) = 0;
             }
+            if (strcmp(sec_type, "None") == 0) {
+                strcpy(profile->SecurityMode, "none");
+            } else if (strcmp(sec_type, "WPAand11i") == 0) {
+                if (strcmp(auth_mode, "PSKAuthentication") == 0) {
+                    strcpy(profile->SecurityMode, "wpa-wpa2-psk");
+                } else {
+                    fprintf(stderr, "Unknown auth mode arrived\n");
+                    break;
+                }
+            } else if (strcmp(sec_type, "11i") == 0) {
+                if (strcmp(auth_mode, "PSKAuthentication") == 0) {
+                    strcpy(profile->SecurityMode, "wpa2-psk");
+                } else {
+                    fprintf(stderr, "Unknown auth mode arrived\n");
+                    break;
+                }
+            } else {
+                fprintf(stderr, "Unknown sec type arrived\n");
+                break;
+            }
+            free(value);
+        } else if (strcmp(update->type, "KeyPassphrase") == 0) {
+            profile_split(emctl, i, ssid_index);
             strncpy(profile->KeyPassphrase, update->value, sizeof(profile->KeyPassphrase) - 1);
+        } else if (strcmp(update->type, "RadioEnable") == 0) {
+            return 0;
+        } else if (strcmp(update->type, "AutoChannelEnable") == 0) {
+            return 0;
+        } else if (strcmp(update->type, "Channel") == 0) {
+            return 0;
+        } else if (strcmp(update->type, "ChannelMode") == 0) {
+            return 0;
         } else {
             fprintf(stderr, "Unknown update arrived\n");
             break;
@@ -1263,11 +1342,12 @@ static void profile_update(PCOSA_DML_EMCTL_CFG emctl, update_params_t *update)
         break;
     }
 
-    return;
+    return 1;
 }
 
 static void *update_handler(void *farg)
 {
+    UNREFERENCED_PARAMETER(farg);
     struct timeval tval;
     struct timespec tspec;
     update_params_t *update;
@@ -1307,6 +1387,7 @@ static void *update_handler(void *farg)
 int EmctlConfigChangeCB(char *context)
 {
     update_params_t *update;
+    bool notify_needed;
     char *p_tok, *st;
     pthread_attr_t attr;
     pthread_attr_t *attrp = NULL;
@@ -1338,7 +1419,10 @@ int EmctlConfigChangeCB(char *context)
     }
 
     pthread_mutex_lock(&g_emctl_mutex);
-    profile_update(g_pEmctl_Cfg, update);
+    notify_needed = profile_update(g_pEmctl_Cfg, update);
+    if (notify_needed == false) {
+        return 0;
+    }
     if (g_pEmctl_Cfg->updating) {
         queue_push(g_pEmctl_Cfg->updates, update);
         pthread_cond_signal(&g_emctl_cond);

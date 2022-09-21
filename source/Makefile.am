@@ -23,18 +23,21 @@
 # Licensed under the Apache License, Version 2.0
 ##########################################################################
 
-AM_CPPFLAGS = -Wall -Werror -D_GNU_SOURCE
+AM_CFLAGS = -D_ANSC_LINUX
+AM_CFLAGS += -D_ANSC_USER
+AM_CFLAGS += -D_ANSC_LITTLE_ENDIAN_
+AM_CFLAGS += $(DBUS_CFLAGS)
 
-AM_CPPFLAGS += -I$(top_srcdir)/hal/include \
-		-I$(top_srcdir)/source/ssp \
-		-I=${includedir} \
-		-I=${includedir}/ccsp
+AM_CFLAGS += -D_GNU_SOURCE
+AM_CFLAGS += -Wall -Wextra -Werror
 
-AM_CFLAGS = -D_ANSC_LINUX -D_ANSC_USER -D_ANSC_LITTLE_ENDIAN_ $(DBUS_CFLAGS)
-
-AM_LDFLAGS = -lsyscfg -lsysevent -lpthread -lccsp_common $(DBUS_LIBS) -llog4c
+ACLOCAL_AMFLAGS = -I m4
 
 noinst_LIBRARIES = libssp.a
+
+libssp_a_CPPFLAGS = -I$(top_srcdir)/source/ssp \
+                    -I=${includedir} \
+                    -I=${includedir}/ccsp
 
 libssp_a_SOURCES = $(srcdir)/collection.c \
                    $(srcdir)/cosa_emctl_dml.c \
@@ -43,3 +46,6 @@ libssp_a_SOURCES = $(srcdir)/collection.c \
                    $(srcdir)/ssp_action.c \
                    $(srcdir)/ssp_main.c \
                    $(srcdir)/ssp_mbi.c
+
+libssp_a_LDFLAGS = -lsyscfg -lsysevent -lpthread -lccsp_common -llog4c
+libssp_a_LDFLAGS += $(DBUS_LIBS)
