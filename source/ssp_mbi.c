@@ -45,72 +45,43 @@
 
 #include "ssp_global.h"
 
-
-ANSC_HANDLE                 bus_handle               = NULL;
-extern char                 g_Subsystem[32];
-extern ANSC_HANDLE          g_MessageBusHandle_Irep; 
-extern char                 g_SubSysPrefix_Irep[32];
+ANSC_HANDLE        bus_handle = NULL;
+extern char        g_Subsystem[32];
+extern ANSC_HANDLE g_MessageBusHandle_Irep; 
+extern char        g_SubSysPrefix_Irep[32];
 
 #ifdef _ANSC_LINUX
-DBusHandlerResult
-CcspComp_path_message_func
-    (
-        DBusConnection  *conn,
-        DBusMessage     *message,
-        void            *user_data
-    )
+DBusHandlerResult CcspComp_path_message_func(DBusConnection *conn, DBusMessage *message, void *user_data)
 {
-    CCSP_MESSAGE_BUS_INFO *bus_info =(CCSP_MESSAGE_BUS_INFO *) user_data;
+    CCSP_MESSAGE_BUS_INFO *bus_info = (CCSP_MESSAGE_BUS_INFO *)user_data;
     const char *interface = dbus_message_get_interface(message);
-    const char *method   = dbus_message_get_member(message);
+    const char *method = dbus_message_get_member(message);
     DBusMessage *reply;
 
     reply = dbus_message_new_method_return (message);
-    if (reply == NULL)
-    {
+    if (reply == NULL) {
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 
-    return CcspBaseIf_base_path_message_func
-               (
-                   conn,
-                   message,
-                   reply,
-                   interface,
-                   method,
-                   bus_info
-               );
+    return CcspBaseIf_base_path_message_func(conn, message, reply, interface,
+        method, bus_info);
 }
 
-ANSC_STATUS
-ssp_Mbi_MessageBusEngage
-    (
-        char * component_id,
-        char * config_file,
-        char * path
-    )
+ANSC_STATUS ssp_Mbi_MessageBusEngage(char *component_id, char *config_file, char *path)
 {
-    ANSC_STATUS                 returnStatus       = ANSC_STATUS_SUCCESS;
-    CCSP_Base_Func_CB           cb                 = {0};
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
+    CCSP_Base_Func_CB cb = {0};
 
-    if ( ! component_id || ! path )
-    {
+    if (!component_id || !path) {
         CcspTraceError((" !!! ssp_Mbi_MessageBusEngage: component_id or path is NULL !!!\n"));
     }
 
     /* Connect to message bus */
-    returnStatus = 
-        CCSP_Message_Bus_Init
-            (
-                component_id,
-                config_file,
-                &bus_handle,
-                (CCSP_MESSAGE_BUS_MALLOC)Ansc_AllocateMemory_Callback,           /* mallocfc, use default */
-                Ansc_FreeMemory_Callback                /* freefc,   use default */
-            );
+    returnStatus = CCSP_Message_Bus_Init(component_id, config_file,
+        &bus_handle, (CCSP_MESSAGE_BUS_MALLOC)Ansc_AllocateMemory_Callback,
+        Ansc_FreeMemory_Callback);
 
-    if ( returnStatus != ANSC_STATUS_SUCCESS )
-    {
+    if (returnStatus != ANSC_STATUS_SUCCESS) {
         CcspTraceError((" !!! SSD Message Bus Init ERROR !!!\n"));
 
         return returnStatus;
@@ -142,105 +113,68 @@ ssp_Mbi_MessageBusEngage
     CcspBaseIf_SetCallback(bus_handle, &cb);
 
     /* Register service callback functions */
-    returnStatus =
-        CCSP_Message_Bus_Register_Path
-            (
-                bus_handle,
-                path,
-                CcspComp_path_message_func,
-                bus_handle
-            );
+    returnStatus = CCSP_Message_Bus_Register_Path(bus_handle, path,
+        CcspComp_path_message_func, bus_handle);
 
-    if ( returnStatus != CCSP_Message_Bus_OK )
-    {
-        CcspTraceError((" !!! CCSP_Message_Bus_Register_Path ERROR returnStatus: %ld\n!!!\n", returnStatus));
+    if (returnStatus != CCSP_Message_Bus_OK) {
+        CcspTraceError((" !!! CCSP_Message_Bus_Register_Path ERROR "
+            "returnStatus: %ld\n!!!\n", returnStatus));
 
         return returnStatus;
     }
 
-
     /* Register event/signal */
-    returnStatus = 
-        CcspBaseIf_Register_Event
-            (
-                bus_handle,
-                0,
-                "currentSessionIDSignal"
-            );
+    returnStatus = CcspBaseIf_Register_Event(bus_handle, 0,
+        "currentSessionIDSignal");
 
-    if ( returnStatus != CCSP_Message_Bus_OK )
-    {
-         CcspTraceError((" !!! CCSP_Message_Bus_Register_Event: CurrentSessionIDSignal ERROR returnStatus: %ld!!!\n", returnStatus));
+    if (returnStatus != CCSP_Message_Bus_OK) {
+         CcspTraceError((" !!! CCSP_Message_Bus_Register_Event: "
+            "CurrentSessionIDSignal ERROR returnStatus: %ld!!!\n", returnStatus));
 
         return returnStatus;
     }
 
     return ANSC_STATUS_SUCCESS;
-
 }
-
 #endif
 
-int
-ssp_Mbi_Initialize
-    (
-        void * user_data
-    )
+int ssp_Mbi_Initialize(void *user_data)
 {
     UNREFERENCED_PARAMETER(user_data);
-    ANSC_STATUS             returnStatus    = ANSC_STATUS_SUCCESS;
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
 
-    return ( returnStatus == ANSC_STATUS_SUCCESS ) ? 0 : 1;
+    return (returnStatus == ANSC_STATUS_SUCCESS) ? 0 : 1;
 }
 
-
-int
-ssp_Mbi_Finalize
-    (
-        void*               user_data
-    )
+int ssp_Mbi_Finalize(void *user_data)
 {
     UNREFERENCED_PARAMETER(user_data);
-    ANSC_STATUS             returnStatus    = ANSC_STATUS_SUCCESS;
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
 
     returnStatus = ssp_cancel();
 
-    return ( returnStatus == ANSC_STATUS_SUCCESS ) ? 0 : 1;
+    return (returnStatus == ANSC_STATUS_SUCCESS) ? 0 : 1;
 }
 
-
-int
-ssp_Mbi_Buscheck
-    (
-        void*               user_data
-    )
+int ssp_Mbi_Buscheck(void *user_data)
 {
     UNREFERENCED_PARAMETER(user_data);
 
     return 0;
 }
 
-
-int
-ssp_Mbi_FreeResources
-    (
-        int                 priority,
-        void                * user_data
-    )
+int ssp_Mbi_FreeResources(int priority, void *user_data)
 {
     UNREFERENCED_PARAMETER(user_data);
-    ANSC_STATUS             returnStatus    = ANSC_STATUS_SUCCESS;
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
 
-    if ( priority == CCSP_COMMON_COMPONENT_FREERESOURCES_PRIORITY_Low )
-    {
+    if (priority == CCSP_COMMON_COMPONENT_FREERESOURCES_PRIORITY_Low) {
         /* Currently do nothing */
-    }
-    else if ( priority == CCSP_COMMON_COMPONENT_FREERESOURCES_PRIORITY_High )
-    {
+    } else if (priority == CCSP_COMMON_COMPONENT_FREERESOURCES_PRIORITY_High) {
         returnStatus = ssp_cancel();
     }
     
-    return ( returnStatus == ANSC_STATUS_SUCCESS ) ? 0 : 1;
+    return (returnStatus == ANSC_STATUS_SUCCESS) ? 0 : 1;
 }
 
 
