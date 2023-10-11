@@ -27,25 +27,43 @@ AM_CFLAGS = -D_ANSC_LINUX
 AM_CFLAGS += -D_ANSC_USER
 AM_CFLAGS += -D_ANSC_LITTLE_ENDIAN_
 AM_CFLAGS += $(DBUS_CFLAGS)
+AM_CFLAGS += $(SYSTEMD_CFLAGS)
 
 AM_CFLAGS += -D_GNU_SOURCE
 AM_CFLAGS += -Wall -Wextra -Werror
 
-ACLOCAL_AMFLAGS = -I m4
+bin_PROGRAMS = em_ctl
 
-noinst_LIBRARIES = libssp.a
+em_ctl_CPPFLAGS = -I$(top_srcdir)/source/ssp \
+                  -I$(top_srcdir)/source/libplatform/include \
+                  -I$(top_srcdir)/source/controller/include \
+                  -I=${includedir} \
+                  -I=${includedir}/ccsp
 
-libssp_a_CPPFLAGS = -I$(top_srcdir)/source/ssp \
-                    -I=${includedir} \
-                    -I=${includedir}/ccsp
+em_ctl_SOURCES = cosa_emctl_dml.c \
+                 cosa_emctl_apis.c \
+                 plugin_main.c \
+                 ssp_action.c \
+                 ssp_main.c \
+                 ssp_mbi.c
 
-libssp_a_SOURCES = $(srcdir)/collection.c \
-                   $(srcdir)/cosa_emctl_dml.c \
-                   $(srcdir)/cosa_emctl_apis.c \
-                   $(srcdir)/plugin_main.c \
-                   $(srcdir)/ssp_action.c \
-                   $(srcdir)/ssp_main.c \
-                   $(srcdir)/ssp_mbi.c
+em_ctl_LDADD = ${top_builddir}/source/controller/src/libcontroller.a \
+               ${top_builddir}/source/ieee1905/src/al/libal.a \
+               ${top_builddir}/source/ieee1905/src/factory/libfactory.a \
+               ${top_builddir}/source/ieee1905/src/common/libcommon.a \
+               ${top_builddir}/source/libplatform/src/libutils.a
 
-libssp_a_LDFLAGS = -lsyscfg -lsysevent -lpthread -lccsp_common -llog4c
-libssp_a_LDFLAGS += $(DBUS_LIBS)
+em_ctl_LDFLAGS = -ljson-c \
+                 -lz \
+                 -lcrypto \
+                 -lubox \
+                 -ldl \
+                 -lpthread \
+                 -lccsp_common \
+                 -lrdkloggers \
+                 -llog4c \
+                 -rdynamic \
+                 -ldbus-1 \
+                 -lrbus \
+                 $(SYSTEMD_LDFLAGS) \
+                 $(DBUS_LIBS)

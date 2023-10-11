@@ -66,10 +66,10 @@
 /*
  *  Define custom trace module ID
  */
-#ifdef   ANSC_TRACE_MODULE_ID
-    #undef  ANSC_TRACE_MODULE_ID
+#ifdef ANSC_TRACE_MODULE_ID
+#undef ANSC_TRACE_MODULE_ID
 #endif
 
-#define  ANSC_TRACE_MODULE_ID                       ANSC_TRACE_ID_SSP
+#define ANSC_TRACE_MODULE_ID ANSC_TRACE_ID_SSP
 
 #endif
