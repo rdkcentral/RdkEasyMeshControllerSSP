@@ -73,100 +73,82 @@ extern char                     g_Subsystem[32];
 extern  ANSC_HANDLE                        bus_handle;
 extern  ULONG                              g_ulAllocatedSizePeak;
 
-ANSC_STATUS
-ssp_create
-    (
-    )
+ANSC_STATUS ssp_create()
 {
     /* Create component common data model object */
-
     g_pComponent_COMMON_emctl = (PCOMPONENT_COMMON_EMCTL)AnscAllocateMemory(sizeof(COMPONENT_COMMON_EMCTL));
 
-    if ( ! g_pComponent_COMMON_emctl )
-    {
+    if (!g_pComponent_COMMON_emctl) {
         return ANSC_STATUS_RESOURCES;
     }
 
-    ComponentCommonDmInit( g_pComponent_COMMON_emctl);
+    ComponentCommonDmInit(g_pComponent_COMMON_emctl);
 
     g_pComponent_COMMON_emctl->Name     = AnscCloneString(CCSP_COMPONENT_NAME_EMCTL);
     g_pComponent_COMMON_emctl->Version  = 1;
     g_pComponent_COMMON_emctl->Author   = AnscCloneString("Your name");
 
-    /* Create ComponentCommonDatamodel interface*/
-    if ( !pSsdCcdIf )
-    {
+    /* Create ComponentCommonDatamodel interface */
+    if (!pSsdCcdIf) {
         pSsdCcdIf = (PCCSP_CCD_INTERFACE)AnscAllocateMemory(sizeof(CCSP_CCD_INTERFACE));
 
-        if ( !pSsdCcdIf )
-        {
+        if (!pSsdCcdIf) {
             return ANSC_STATUS_RESOURCES;
-        }
-        else
-        {
+        } else {
             AnscCopyString(pSsdCcdIf->Name, CCSP_CCD_INTERFACE_NAME);
 
-            pSsdCcdIf->InterfaceId              = CCSP_CCD_INTERFACE_ID;
-            pSsdCcdIf->hOwnerContext            = NULL;
-            pSsdCcdIf->Size                     = sizeof(CCSP_CCD_INTERFACE);
+            pSsdCcdIf->InterfaceId         = CCSP_CCD_INTERFACE_ID;
+            pSsdCcdIf->hOwnerContext       = NULL;
+            pSsdCcdIf->Size                = sizeof(CCSP_CCD_INTERFACE);
 
-            pSsdCcdIf->GetComponentName         = ssp_CcdIfGetComponentName;
-            pSsdCcdIf->GetComponentVersion      = ssp_CcdIfGetComponentVersion;
-            pSsdCcdIf->GetComponentAuthor       = ssp_CcdIfGetComponentAuthor;
-            pSsdCcdIf->GetComponentHealth       = ssp_CcdIfGetComponentHealth;
-            pSsdCcdIf->GetComponentState        = ssp_CcdIfGetComponentState;
-            pSsdCcdIf->GetLoggingEnabled        = ssp_CcdIfGetLoggingEnabled;
-            pSsdCcdIf->SetLoggingEnabled        = ssp_CcdIfSetLoggingEnabled;
-            pSsdCcdIf->GetLoggingLevel          = ssp_CcdIfGetLoggingLevel;
-            pSsdCcdIf->SetLoggingLevel          = ssp_CcdIfSetLoggingLevel;
-            pSsdCcdIf->GetMemMaxUsage           = ssp_CcdIfGetMemMaxUsage;
-            pSsdCcdIf->GetMemMinUsage           = ssp_CcdIfGetMemMinUsage;
-            pSsdCcdIf->GetMemConsumed           = ssp_CcdIfGetMemConsumed;
-            pSsdCcdIf->ApplyChanges             = ssp_CcdIfApplyChanges;
+            pSsdCcdIf->GetComponentName    = ssp_CcdIfGetComponentName;
+            pSsdCcdIf->GetComponentVersion = ssp_CcdIfGetComponentVersion;
+            pSsdCcdIf->GetComponentAuthor  = ssp_CcdIfGetComponentAuthor;
+            pSsdCcdIf->GetComponentHealth  = ssp_CcdIfGetComponentHealth;
+            pSsdCcdIf->GetComponentState   = ssp_CcdIfGetComponentState;
+            pSsdCcdIf->GetLoggingEnabled   = ssp_CcdIfGetLoggingEnabled;
+            pSsdCcdIf->SetLoggingEnabled   = ssp_CcdIfSetLoggingEnabled;
+            pSsdCcdIf->GetLoggingLevel     = ssp_CcdIfGetLoggingLevel;
+            pSsdCcdIf->SetLoggingLevel     = ssp_CcdIfSetLoggingLevel;
+            pSsdCcdIf->GetMemMaxUsage      = ssp_CcdIfGetMemMaxUsage;
+            pSsdCcdIf->GetMemMinUsage      = ssp_CcdIfGetMemMinUsage;
+            pSsdCcdIf->GetMemConsumed      = ssp_CcdIfGetMemConsumed;
+            pSsdCcdIf->ApplyChanges        = ssp_CcdIfApplyChanges;
         }
     }
 
     /* Create ComponentCommonDatamodel interface*/
-    if ( !pDslhLcbIf )
-    {
+    if (!pDslhLcbIf) {
         pDslhLcbIf = (PDSLH_LCB_INTERFACE)AnscAllocateMemory(sizeof(DSLH_LCB_INTERFACE));
 
-        if ( !pDslhLcbIf )
-        {
+        if (!pDslhLcbIf) {
             return ANSC_STATUS_RESOURCES;
-        }
-        else
-        {
+        } else {
             AnscCopyString(pDslhLcbIf->Name, CCSP_LIBCBK_INTERFACE_NAME);
 
-            pDslhLcbIf->InterfaceId              = CCSP_LIBCBK_INTERFACE_ID;
-            pDslhLcbIf->hOwnerContext            = NULL;
-            pDslhLcbIf->Size                     = sizeof(DSLH_LCB_INTERFACE);
+            pDslhLcbIf->InterfaceId   = CCSP_LIBCBK_INTERFACE_ID;
+            pDslhLcbIf->hOwnerContext = NULL;
+            pDslhLcbIf->Size          = sizeof(DSLH_LCB_INTERFACE);
 
-            pDslhLcbIf->InitLibrary              = COSA_Init;
+            pDslhLcbIf->InitLibrary   = COSA_Init;
         }
     }
 
     pDslhCpeController = DslhCreateCpeController(NULL, NULL, NULL);
 
-    if ( !pDslhCpeController )
-    {
+    if (!pDslhCpeController) {
         CcspTraceWarning(("CANNOT Create pDslhCpeController... Exit!\n"));
-
         return ANSC_STATUS_RESOURCES;
     }
 
     return ANSC_STATUS_SUCCESS;
 }
 
-ANSC_STATUS
-ssp_engage
-    (
-    )
+ANSC_STATUS ssp_engage()
 {
-	ANSC_STATUS					    returnStatus                = ANSC_STATUS_SUCCESS;
-    PCCC_MBI_INTERFACE              pSsdMbiIf                   = (PCCC_MBI_INTERFACE)MsgHelper_CreateCcdMbiIf((void*)bus_handle, g_Subsystem);
-    char                            CrName[256];
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
+    PCCC_MBI_INTERFACE pSsdMbiIf = (PCCC_MBI_INTERFACE)MsgHelper_CreateCcdMbiIf((void*)bus_handle, g_Subsystem);
+    char CrName[256];
 
     g_pComponent_COMMON_emctl->Health = CCSP_COMMON_COMPONENT_HEALTH_Yellow;
 
@@ -177,29 +159,22 @@ ssp_engage
     pDslhCpeController->SetDbusHandle((ANSC_HANDLE)pDslhCpeController, (ANSC_HANDLE)bus_handle);
     pDslhCpeController->Engage((ANSC_HANDLE)pDslhCpeController);
 
-    if ( g_Subsystem[0] != 0 )
-    {
+    if (g_Subsystem[0] != 0) {
         _ansc_sprintf(CrName, "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
-    }
-    else
-    {
+    } else {
         _ansc_sprintf(CrName, "%s", CCSP_DBUS_INTERFACE_CR);
     }
 
-    returnStatus =
-        pDslhCpeController->RegisterCcspDataModel
-            (
-                (ANSC_HANDLE)pDslhCpeController,
-                CrName, /* CCSP_DBUS_INTERFACE_CR,*/  /* CCSP CR ID */
-                CCSP_DATAMODEL_XML_FILE,              /* Data Model XML file. Can be empty if only base data model supported. */
-                CCSP_COMPONENT_NAME_EMCTL,            /* Component Name    */
-                CCSP_COMPONENT_VERSION_EMCTL,         /* Component Version */
-                CCSP_COMPONENT_PATH_EMCTL,            /* Component Path    */
-                g_Subsystem /* Component Prefix  */
-            );
+    returnStatus = pDslhCpeController->RegisterCcspDataModel(
+        (ANSC_HANDLE)pDslhCpeController,
+        CrName,                          /* CCSP CR ID */
+        CCSP_DATAMODEL_XML_FILE,         /* Data Model XML file. Can be empty if only base data model supported. */
+        CCSP_COMPONENT_NAME_EMCTL,       /* Component Name    */
+        CCSP_COMPONENT_VERSION_EMCTL,    /* Component Version */
+        CCSP_COMPONENT_PATH_EMCTL,       /* Component Path    */
+        g_Subsystem                      /* Component Prefix  */);
 
-    if ( returnStatus == ANSC_STATUS_SUCCESS || returnStatus == CCSP_SUCCESS)
-    {
+    if (returnStatus == ANSC_STATUS_SUCCESS || returnStatus == CCSP_SUCCESS) {
         /* System is fully initialized */
         g_pComponent_COMMON_emctl->Health = CCSP_COMMON_COMPONENT_HEALTH_Green;
     }
@@ -207,174 +182,126 @@ ssp_engage
     return ANSC_STATUS_SUCCESS;
 }
 
-
-ANSC_STATUS
-ssp_cancel
-    (
-    )
+ANSC_STATUS ssp_cancel()
 {
-	int                             nRet  = 0;
-    char                            CrName[256];
-    char                            CpName[256];
+    int  nRet  = 0;
+    char CrName[256];
+    char CpName[256];
 
-    if( g_pComponent_COMMON_emctl == NULL)
-    {
+    if (g_pComponent_COMMON_emctl == NULL) {
         return ANSC_STATUS_SUCCESS;
     }
 
-    if ( g_Subsystem[0] != 0 )
-    {
+    if (g_Subsystem[0] != 0) {
         _ansc_sprintf(CrName, "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
         _ansc_sprintf(CpName, "%s%s", g_Subsystem, CCSP_COMPONENT_NAME_EMCTL);
-    }
-    else
-    {
+    } else {
         _ansc_sprintf(CrName, "%s", CCSP_DBUS_INTERFACE_CR);
         _ansc_sprintf(CpName, "%s", CCSP_COMPONENT_NAME_EMCTL);
     }
     /* unregister component */
-    nRet = CcspBaseIf_unregisterComponent(bus_handle, CrName, CpName );  
+    nRet = CcspBaseIf_unregisterComponent(bus_handle, CrName, CpName);
     AnscTrace("unregisterComponent returns %d\n", nRet);
 
     pDslhCpeController->Cancel((ANSC_HANDLE)pDslhCpeController);
     AnscFreeMemory(pDslhCpeController);
 
-    if ( pSsdCcdIf ) AnscFreeMemory(pSsdCcdIf);
-    if ( g_pComponent_COMMON_emctl ) AnscFreeMemory(g_pComponent_COMMON_emctl);
+    if (pSsdCcdIf) {
+        AnscFreeMemory(pSsdCcdIf);
+    }
+    if (g_pComponent_COMMON_emctl) {
+        AnscFreeMemory(g_pComponent_COMMON_emctl);
+    }
 
     g_pComponent_COMMON_emctl = NULL;
-    pSsdCcdIf                = NULL;
-    pDslhCpeController       = NULL;
+    pSsdCcdIf                 = NULL;
+    pDslhCpeController        = NULL;
 
     return ANSC_STATUS_SUCCESS;
 }
 
-
-char*
-ssp_CcdIfGetComponentName
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+char *ssp_CcdIfGetComponentName(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->Name;
 }
 
-
-ULONG
-ssp_CcdIfGetComponentVersion
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetComponentVersion(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->Version;
 }
 
-
-char*
-ssp_CcdIfGetComponentAuthor
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+char *ssp_CcdIfGetComponentAuthor(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->Author;
 }
 
-
-ULONG
-ssp_CcdIfGetComponentHealth
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetComponentHealth(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->Health;
 }
 
-
-ULONG
-ssp_CcdIfGetComponentState
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetComponentState(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->State;
 }
 
-
-
-BOOL
-ssp_CcdIfGetLoggingEnabled
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+BOOL ssp_CcdIfGetLoggingEnabled(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->LogEnable;
 }
 
-
-ANSC_STATUS
-ssp_CcdIfSetLoggingEnabled
-    (
-        ANSC_HANDLE                     hThisObject,
-        BOOL                            bEnabled
-    )
+ANSC_STATUS ssp_CcdIfSetLoggingEnabled(ANSC_HANDLE hThisObject, BOOL bEnabled)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
-    if( g_pComponent_COMMON_emctl->LogEnable == bEnabled) return ANSC_STATUS_SUCCESS;
+    if (g_pComponent_COMMON_emctl->LogEnable == bEnabled) {
+        return ANSC_STATUS_SUCCESS;
+    }
     g_pComponent_COMMON_emctl->LogEnable = bEnabled;
-    if(bEnabled) g_iTraceLevel = (INT) g_pComponent_COMMON_emctl->LogLevel;
-    else g_iTraceLevel = CCSP_TRACE_INVALID_LEVEL;
+    if (bEnabled) {
+        g_iTraceLevel = (INT) g_pComponent_COMMON_emctl->LogLevel;
+    } else {
+        g_iTraceLevel = CCSP_TRACE_INVALID_LEVEL;
+    }
 
     return ANSC_STATUS_SUCCESS;
 }
 
-
-ULONG
-ssp_CcdIfGetLoggingLevel
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetLoggingLevel(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->LogLevel;
 }
 
-
-ANSC_STATUS
-ssp_CcdIfSetLoggingLevel
-    (
-        ANSC_HANDLE                     hThisObject,
-        ULONG                           LogLevel
-    )
+ANSC_STATUS ssp_CcdIfSetLoggingLevel(ANSC_HANDLE hThisObject, ULONG LogLevel)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
-    if( g_pComponent_COMMON_emctl->LogLevel == LogLevel) return ANSC_STATUS_SUCCESS;
+    if (g_pComponent_COMMON_emctl->LogLevel == LogLevel) {
+        return ANSC_STATUS_SUCCESS;
+    }
     g_pComponent_COMMON_emctl->LogLevel = LogLevel;
-    if( g_pComponent_COMMON_emctl->LogEnable) g_iTraceLevel = (INT) g_pComponent_COMMON_emctl->LogLevel;
+    if (g_pComponent_COMMON_emctl->LogEnable) {
+        g_iTraceLevel = (INT) g_pComponent_COMMON_emctl->LogLevel;
+    }
 
     return ANSC_STATUS_SUCCESS;
 }
 
-
-ULONG
-ssp_CcdIfGetMemMaxUsage
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetMemMaxUsage(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
@@ -382,43 +309,30 @@ ssp_CcdIfGetMemMaxUsage
 }
 
 
-ULONG
-ssp_CcdIfGetMemMinUsage
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetMemMinUsage(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
 
     return g_pComponent_COMMON_emctl->MemMinUsage;
 }
 
-
-ULONG
-ssp_CcdIfGetMemConsumed
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ULONG ssp_CcdIfGetMemConsumed(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
-    LONG             size = 0;
+    LONG size = 0;
 
     size = AnscGetComponentMemorySize(CCSP_COMPONENT_NAME_EMCTL);
-    if (size == -1 )
+    if (size == -1) {
         size = 0;
+    }
 
     return size;
 }
 
-
-ANSC_STATUS
-ssp_CcdIfApplyChanges
-    (
-        ANSC_HANDLE                     hThisObject
-    )
+ANSC_STATUS ssp_CcdIfApplyChanges(ANSC_HANDLE hThisObject)
 {
     UNREFERENCED_PARAMETER(hThisObject);
-    ANSC_STATUS                         returnStatus    = ANSC_STATUS_SUCCESS;
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
     /* Assume the parameter settings are committed immediately. */
     /* AnscSetTraceLevel((INT) g_pComponent_COMMON_emctl->LogLevel); */
 

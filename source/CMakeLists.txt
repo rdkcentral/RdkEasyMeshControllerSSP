@@ -45,18 +45,12 @@ foreach(src_file ${SSP_SOURCES})
 endforeach()
 
 set(SSP_INCLUDES PUBLIC
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/ccsp/custom
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/ccsp/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/ccsp/components/common/MessageBusHelper/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/ccsp/components/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/cosa/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/cosa/include/linux
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/cosa/package/slap/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/debug_api/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/util_api/ansc/include
-    /opt/home/airties/rpi3b/rdkb/components/opensource/ccsp/CcspCommonLibrary/source/util_api/http/include
-    /opt/home/airties/rpi3b/build-raspberrypi-rdk-broadband/tmp/work/cortexa7t2hf-neon-vfpv4-rdk-linux-gnueabi/dbus/1.12.16-r0/dbus-1.12.16
-    /opt/home/airties/rpi3b/build-raspberrypi-rdk-broadband/tmp/work/cortexa7t2hf-neon-vfpv4-rdk-linux-gnueabi/dbus/1.12.16-r0/sysroot-destdir/usr/lib/dbus-1.0/include
+    ${CMAKE_SOURCE_DIR}/source/libplatform/include
+    ${CMAKE_SOURCE_DIR}/source/controller/include
+    PUBLIC ${LIBUBOX_INCLUDE_DIRS}
+    PUBLIC ${BSP_SYSROOTS_DIR}/usr/include/ccsp
+    PUBLIC ${BSP_SYSROOTS_DIR}/usr/include/dbus-1.0
+    PUBLIC ${BSP_SYSROOTS_DIR}/usr/lib/dbus-1.0/include
 )
 
 set(SSP_COMPILE_OPTIONS
@@ -71,9 +65,8 @@ set(SSP_COMPILE_OPTIONS
 
 set(SSP_LIBRARIES
     -Wl,--gc-sections
-    -L/opt/home/airties/rpi3b/build-raspberrypi-rdk-broadband/tmp/work/cortexa7t2hf-neon-vfpv4-rdk-linux-gnueabi/ccsp-common-library/rdkb-2021q3-dunfell+git999-r0/sysroot-destdir/usr/lib
+    -lpthread
     -lccsp_common
-    -L/opt/home/airties/rpi3b/build-raspberrypi-rdk-broadband/tmp/work/cortexa7t2hf-neon-vfpv4-rdk-linux-gnueabi/dbus/1.12.16-r0/sysroot-destdir/usr/lib
     -ldbus-1
 #   DBUS_LIBS
 # uncomment if you want to see which symbols are GC'd
