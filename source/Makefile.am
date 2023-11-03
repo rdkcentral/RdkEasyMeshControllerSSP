@@ -51,7 +51,10 @@ em_ctl_LDADD = ${top_builddir}/source/controller/src/libcontroller.a \
                ${top_builddir}/source/ieee1905/src/al/libal.a \
                ${top_builddir}/source/ieee1905/src/factory/libfactory.a \
                ${top_builddir}/source/ieee1905/src/common/libcommon.a \
-               ${top_builddir}/source/libplatform/src/libutils.a
+               ${top_builddir}/source/libplatform/src/libutils.a \
+	       -lrbus \
+	       -lcrypto \
+	       -ljson-c
 
 em_ctl_LDFLAGS = -ljson-c \
                  -lz \
