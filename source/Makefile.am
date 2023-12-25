@@ -47,23 +47,23 @@ em_ctl_SOURCES = cosa_emctl_dml.c \
                  ssp_main.c \
                  ssp_mbi.c
 
+em_ctl_LDFLAGS = $(SYSTEMD_LDFLAGS) \
+                 $(DBUS_LIBS) \
+                 -rdynamic
+
 em_ctl_LDADD = ${top_builddir}/source/controller/src/libcontroller.a \
                ${top_builddir}/source/ieee1905/src/al/libal.a \
                ${top_builddir}/source/ieee1905/src/factory/libfactory.a \
                ${top_builddir}/source/ieee1905/src/common/libcommon.a \
-               ${top_builddir}/source/libplatform/src/libutils.a
+               ${top_builddir}/source/libplatform/src/libutils.a \
+               -lccsp_common \
+               -lrdkloggers \
+               -llog4c \
+               -ldbus-1 \
+               -lrbus \
+               -lubox \
+               -ljson-c \
+               -lcrypto \
+               -lpthread \
+               -ldl
 
-em_ctl_LDFLAGS = -ljson-c \
-                 -lz \
-                 -lcrypto \
-                 -lubox \
-                 -ldl \
-                 -lpthread \
-                 -lccsp_common \
-                 -lrdkloggers \
-                 -llog4c \
-                 -rdynamic \
-                 -ldbus-1 \
-                 -lrbus \
-                 $(SYSTEMD_LDFLAGS) \
-                 $(DBUS_LIBS)
